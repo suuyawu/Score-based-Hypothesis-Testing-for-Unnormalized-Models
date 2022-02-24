@@ -1,7 +1,7 @@
 # HScore for OOD Detection
 score matching out-of-distribution detection
 
-- pretrained_score function
+- ./pretrained_score_function
 
 "This includes implementation for the score-based test statistics on CIFAR10 (in-distribution) and SVHN (out-of-distribution)."
 
