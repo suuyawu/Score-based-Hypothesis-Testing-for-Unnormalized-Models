@@ -69,44 +69,46 @@ cifar10_data = datasets.CIFAR10(root='../data',
                 download = True,
                 transform = transforms.Compose([
                                 transforms.ToTensor(),
-                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
+                                # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
                             ]))
 eval_cf10 = torch.utils.data.DataLoader(cifar10_data, batch_size=batch_size, shuffle=True)
 
 s_hscore_vrs_cf10 = []
+hscore_fds_cf10 = []
 for i, (batch_cf10, _) in enumerate(eval_cf10):
     batch_cf10 = batch_cf10.to(config.device)
-    s_hscore_vr_cf10 = sliced_hscore_vr(score_fn_0, batch_cf10, n_particles=1)
+    s_hscore_vr_cf10 = hscore_hutchinson(score_fn_0, batch_cf10, n_particles=10)
+    hscore_fd_cf10 = hscore_fd(score_fn_0, batch_cf10)
     s_hscore_vrs_cf10.append(s_hscore_vr_cf10.item())
-    if i == 100:
-        print(f"CIFAR10 average sliced_score_vr: {s_hscore_vr_cf10.mean().item()}")
-        # hscore_cf10 = hscore(score_fn_0, batch_cf10)
-        # print(f"CIFAR10 hyverinen score: {hscore_cf10.mean().item()}")
-        break
+    hscore_fds_cf10.append(hscore_fd_cf10.item())
 
 svhn_data = datasets.SVHN(root='../data', 
                 split = 'test', 
                 download = True,
                 transform = transforms.Compose([
                                 transforms.ToTensor(),
-                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                                # transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
+                                # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
                             ]))
 s_hscore_vrs_svnh = []
+hscore_fds_svnh = []
 eval_svnh = torch.utils.data.DataLoader(svhn_data, batch_size=64, shuffle=True)
 for i, (batch_svnh, _) in enumerate(eval_svnh):
     batch_svnh = batch_svnh.to(config.device)
-    s_hscore_vr_svnh = sliced_hscore_vr(score_fn_0, batch_svnh, n_particles=1)
+    s_hscore_vr_svnh = hscore_hutchinson(score_fn_0, batch_svnh, n_particles=10)
+    hscore_fd_svnh = hscore_fd(score_fn_0, batch_svnh)
     s_hscore_vrs_svnh.append(s_hscore_vr_svnh.item())
-    if i == 100:
-        print(f"SVNH average sliced_score_vr: {s_hscore_vr_svnh.mean().item()}")
-        # hscore_svnh = hscore(score_fn_0, batch_svnh)
-        # print(f"CIFAR10 hyverinen score: {torch.tensor(hscore_svnh).mean().item()}")
-        break
+    hscore_fds_svnh.append(hscore_fd_svnh.item())
 
-plt.hist(np.array(s_hscore_vrs_cf10), label = 'ID-cf10')
-plt.hist(np.array(s_hscore_vrs_svnh), label = 'OOD-svnh')
+plt.hist(np.array(s_hscore_vrs_cf10), label = 'ID-cf10-h')
+plt.hist(np.array(s_hscore_vrs_svnh), label = 'OOD-svnh-h')
 plt.legend()
-plt.title('distribution of scores')
-plt.savefig('../output/result1.pdf')
+plt.title('Distribution of hscore by Hutchinson trick')
+plt.savefig('../output/result.pdf')
+
+plt.hist(np.array(hscore_fds_cf10), label = 'ID-cf10-fd')
+plt.hist(np.array(hscore_fds_svnh), label = 'OOD-svnh-fd')
+plt.legend()
+plt.title('Distribution of hscore by finite difference')
+plt.savefig('../output/result_fd.pdf')
