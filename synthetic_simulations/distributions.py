@@ -65,9 +65,10 @@ class RBM():
         hscore = self.b-x+np.multiply(self.W, np.tanh(np.multiply(self.W.T, x)+self.c))
         return hscore
     def sample(self, xdim, hdim, shape):
-        self
-        pass
-    pass
+        true_idx = np.random.uniform(0,1,xdim).reshape(xdim, 1)
+        sampled = np.zeros((xdim, 1))
+        sampled[true_idx] = 1
+        return sampled
 
 class OneDimensionNormal():
     def __init__(self, mean, std):
