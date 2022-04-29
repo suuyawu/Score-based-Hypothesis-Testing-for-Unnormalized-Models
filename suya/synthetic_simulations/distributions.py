@@ -44,31 +44,97 @@ class OneDimensionGM():
             XX[i] = np.fromiter((np.random.normal(*(theta[j])) for j in mixture_idx), dtype=np.float64)
         return XX
 
-class RBM():
+class GB_RBM():
     """
     Gaussian-Bernoulli Restricted Boltzmann Machine
-    x: the observations, real values, xdim
-    h: the hidden states, binary values, hdim
+    x: the observations, real-valued in R^xdim
+    h: the hidden states, binary-valued in R^hdim
     """
-    def __init__(self, xdim, hdim=2):
-        self.W = np.random.randn(xdim, hdim)
-        self.b = np.random.randn(xdim, 1)
-        self.c = np.random.randn(hdim, 1)
-    def energy(self, x, h):
-        return -np.inner(self.b.flatten(), x.flatten())-np.inner(self.c.flatten(), h.flatten())\
-            -np.matmul(np.matmul(x.transpose(), self.W), h)
-    def pdf(self, x):
-        pass
-    def cdf(self, x):
-        pass
+    def __init__(self, W, b, c):
+        """
+        Gaussian Bernoulli RBM model
+
+        Parameters:
+            W: ndarray in shape (xdim, hdim)
+            b: 1darray in shape (1, xdim)
+            c: 1darray in shape (1, hdim)
+        """
+        self.xdim, self.hdim = W.shape
+        self.W = W
+        self.b = b
+        self.c = c
+    def _sigmoid(self, z):
+        return 1.0 / (1 + np.exp(-z))
+
+    def free_energy(self, x):
+        """
+        Free energy F(x), defined as,
+            F(x) = -log sum_h e^{-E(x, h)}
+        For Gaussian-Bernoulli RBM, 
+            F(x) = -x^Tb+1/2(x^Tx+b^Tb)-sum_hdim log(1+exp(self.b+W^Tx))
+        """
+        return -np.dot(x, self.b) +0.5*((x*x).sum(-1)+np.dot(self.b, self.b.T))- np.log(1+np.exp(np.dot(x, self.W)+self.c)).sum(-1)
     def hscore(self, x):
-        hscore = self.b-x+np.multiply(self.W, np.tanh(np.multiply(self.W.T, x)+self.c))
-        return hscore
-    def sample(self, xdim, hdim, shape):
-        true_idx = np.random.uniform(0,1,xdim).reshape(xdim, 1)
-        sampled = np.zeros((xdim, 1))
-        sampled[true_idx] = 1
-        return sampled
+        """
+        Hyvarinen score for Gaussian-Bernoulli RBM,
+            s_H(x) = 
+        """
+        sig = self._sigmoid(np.dot(x, self.W)+self.c)
+        _x_px = self.b-x+np.dot(sig, self.W.T)
+        _xx_px = np.trace(1-np.dot(np.dot(self.W, np.dot(sig.T, 1-sig)), self.W.T))
+        return 0.5*np.sum(_x_px*_x_px, axis=-1)-_xx_px
+    def score_function(self, x):
+        """
+        score function for Gaussian-Bernoulli RBM,
+            s(x) = 
+        """
+        sig = self._sigmoid(np.dot(x, self.W)+self.c)
+        _x_px = self.b-x+np.dot(sig, self.W.T)
+        return _x_px
+    def pdf(self, x, density=True):
+        return np.exp(-self.free_energy(x))
+    def reject_sampling(self, num_samples, scaler, stop = 1e3):
+        """
+        Draw exact samples from Gaussian-Bernoulli RBM
+        """
+        samples = []
+        stop_sign = 0
+        from scipy.stats import multivariate_normal
+        while len(samples)<num_samples and stop_sign<stop:
+            mean = np.zeros(self.xdim)
+            var = np.eye(self.xdim)
+            x = np.random.multivariate_normal(mean, var)
+            envelope = scaler * multivariate_normal.pdf(x, mean, var)
+            p = np.random.uniform(0, envelope)
+            if p < np.exp(-self.free_energy(x)):
+                samples.append(x)
+        return samples
+    def visible_given_hidden(self, h):
+        """
+        Input the hiddens: ndarray in (n_samples, hdim)
+        Output the visibles: ndarray in (n_samples, xdim)
+        """
+        m, n, _ = h.shape
+        mean_v_h = np.dot(h, self.W.T) + self.b
+        return np.random.randn(m, n, self.xdim)+mean_v_h
+    def hidden_given_visible(self, x):
+        """
+        Input the visibles: ndarray in (n_samples, xdim)
+        Output the hiddens: ndarray in (n_samples, hdim)
+        """
+        m, n, _ = x.shape
+        mean_h_v = self._sigmoid(np.dot(x, self.W) + self.c)
+        return  mean_h_v > np.random.rand(m, n, self.hdim)
+    def sample(self, m, n, iters=50):
+        """
+        Draw samples from Gaussian-Bernoulli RBM by gibbs sampling
+        """
+        x=torch.randn(m, n, self.xdim)
+        h=np.random.randint(2,(m, n, self.hdim))
+        for t in range(iters):
+            h = self.hidden_given_visible(x)
+            x = self.visible_given_hidden(h)
+        return x
 
 class OneDimensionNormal():
     def __init__(self, mean, std):
