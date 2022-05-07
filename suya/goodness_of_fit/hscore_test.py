@@ -4,8 +4,9 @@ import torch
 import time
 
 def Hscore(samples, null_hscore, alter_hscore):
-    """Calculate Hyvarian Score Difference"""
+    """Calculate Hyvarinen Score Difference"""
     Hscore_items = -alter_hscore(samples) + null_hscore(samples)
+    #To calculate the scalar for chi2 distribution approximation under the null
     #Hscore_items = Hscore_items*scalar
     return Hscore_items, torch.sum(Hscore_items,-1)
 

@@ -1,11 +1,15 @@
 """Benchmarks
-Standard methods:Likelihood Ratio Test (LRT), Kolmogorov Smirnov (KS) test and Cramér-von Mises (CM) test
+Standard methods:
+Goodness of fit for comparing two models (Simple vs. Simple test): Likelihood Ratio Test (LRT)
+Goodness of fit: Kolmogorov Smirnov (KS) test and Cramér-von Mises (CM) test
 
-Methods for un-normalized statistical models: KSD [1] and Sliced KSD [2] 
+KSD-based methods:
+Goodness of fit: KSD [1]
+Two samples tests: Sliced KSD [2] 
 [1] Liu, Q., Lee, J. D., & Jordan, M. (2016). A kernelized Stein discrepancy for goodness-of-fit tests. In 33rd International Conference on Machine Learning, ICML 2016 (Vol. 1).
 [2] Gong, W., Li, Y., & Hernández-Lobato, J. M. (2020). Sliced Kernelized Stein Discrepancy. http://arxiv.org/abs/2006.16531
 
-Non-parametric methods: MMD [3] and NTK-MMD [4]
+Two sample tests: MMD [3] and NTK-MMD [4]
 [3] Gretton, A., Borgwardt, K. M., Rasch, M. J., Smola, A., Schölkopf, B., & Smola GRETTON, A. (2012). A Kernel Two-Sample Test Bernhard Schölkopf. In Journal of Machine Learning Research (Vol. 13). www.gatsby.ucl.ac.uk/
 [4] Cheng, X., & Xie, Y. (2021). Neural Tangent Kernel Maximum Mean Discrepancy. http://arxiv.org/abs/2106.03227
 """
@@ -168,7 +172,7 @@ def MMD2u(K, m, n):
         1.0 / (n * (n - 1.0)) * (Ky.sum() - Ky.diagonal().sum()) - \
         2.0 / (m * n) * Kxy.sum()
 
-def mmd_bootstrap(null_samples, alter_samples, num_bootstrap):
+def MMD_bootstrap(null_samples, alter_samples, num_bootstrap):
     n1 = null_samples.shape[0]
     n2 = alter_samples.shape[0]
     _, K = MMD_statistic(null_samples, alter_samples, ret_matrix=True)
@@ -192,7 +196,7 @@ def Distance_test_batch(test_name, null_samples, alter_samples, null_model, num_
     if test_name == 'KSD-U':
         bootstrap_null_samples = multinomial_bootstrap(test_name, num_bootstrap, num_samples, null_samples, null_model.score)
     if test_name == 'MMD':
-        bootstrap_null_samples = mmd_bootstrap(null_samples, alter_samples[0], num_bootstrap)
+        bootstrap_null_samples = MMD_bootstrap(null_samples, alter_samples[0], num_bootstrap)
 
     alter_statisitics = []
     pvalues = []
