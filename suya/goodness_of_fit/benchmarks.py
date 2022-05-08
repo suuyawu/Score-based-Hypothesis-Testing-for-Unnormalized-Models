@@ -50,9 +50,7 @@ def Nonparametric_test_batch(test_name, alter_samples, model0, alpha=0.05):
     return result_batch
 
 def KSD_statistics(y, score_func, width='heuristic', V_stat = False):
-    """KSD for goodness of fit test
-    pytorch implementation of https://rdrr.io/cran/KSD/
-    """
+    """KSD for goodness of fit test pytorch implementation of https://rdrr.io/cran/KSD/"""
     #set up the the bandwidth of RBF Kernel
     if width == 'heuristic':
         h = ratio_median_heuristic(y, score_func)
@@ -83,8 +81,7 @@ def KSD_statistics(y, score_func, width='heuristic', V_stat = False):
         return M2, torch.sum(M2)/(n_samples*(n_samples-1))
 
 def multinomial_weights(num_bootstrap, num_samples):
-    """Sample multinomial weights for bootstrap by Huskova & Janssen (1993)
-    """
+    """Sample multinomial weights for bootstrap by Huskova & Janssen (1993)"""
     weights = np.random.multinomial(num_samples, np.ones(num_samples) / num_samples, size=int(num_bootstrap))
     weights=weights/num_samples
     weights = torch.from_numpy(weights)
@@ -114,18 +111,15 @@ def KSD_U_test(alter_samples, bootstrap_null_samples, null_score):
     return test_statistic, pvalue
 
 def l2norm_dist(sample_1, sample_2):
-    r"""Compute the matrix of all squared pairwise distances.
-    Arguments
-    ---------
-    sample_1 : torch.Tensor or Variable
-        The first sample, should be of shape ``(n_1, d)``.
-    sample_2 : torch.Tensor or Variable
-        The second sample, should be of shape ``(n_2, d)``.
+    """Compute the matrix of all squared pairwise distances.
+    
+    Args:
+        sample_1 (Tensor in shape (n_1, d)): The first sample
+        sample_2 (Tensor in shape (n_2, d)): The second sample
+
     Returns
-    -------
-    torch.Tensor or Variable
-        Matrix of shape (n_1, n_2). The [i, j]-th entry is equal to
-        ``|| sample_1[i, :] - sample_2[j, :] ||_p``."""
+        Tensor in shape (n_1, n_2): The [i, j]-th entry is equal to ``|| sample_1[i, :] - sample_2[j, :] ||_p``.
+    """
     n_1, n_2 = sample_1.size(0), sample_2.size(0)
     norms_1 = torch.sum(sample_1**2, dim=1, keepdim=True)
     norms_2 = torch.sum(sample_2**2, dim=1, keepdim=True)
@@ -135,8 +129,7 @@ def l2norm_dist(sample_1, sample_2):
     return torch.sqrt(1e-5 + torch.abs(distances_squared))
 
 def MMD_statistic(samples1, samples2, ret_matrix=False):
-    """compute mmd with rbf kernel
-    """
+    """compute mmd with rbf kernel"""
     n_1 = samples1.shape[0]
     n_2 = samples2.shape[0]
     a00 = 1. / (n_1 * (n_1 - 1.))
@@ -163,8 +156,7 @@ def MMD_statistic(samples1, samples2, ret_matrix=False):
         return mmd
 
 def MMD2u(K, m, n):
-    """The MMD^2_u unbiased statistic.
-    """
+    """The MMD^2_u unbiased statistic."""
     Kx = K[:m, :m]
     Ky = K[m:, m:]
     Kxy = K[:m, m:]

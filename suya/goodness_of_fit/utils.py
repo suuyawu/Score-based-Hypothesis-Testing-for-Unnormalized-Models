@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from torch.utils.data import Dataset, DataLoader
 
 def find_median_distance(Z, T):
     """return the median of the data distance
@@ -32,6 +33,14 @@ def ratio_median_heuristic(Z, score_func):
     bandwidth = (dist_median/_zscore_median)**0.25
     return bandwidth
 
+class Sample_Dataset(Dataset):
+    def __init__(self,dataset):
+        self.dataset=dataset
+    def __len__(self):
+        return self.dataset.shape[0]
+    def __getitem__(self,idx):
+        return self.dataset[idx,:]
+
 if __name__ == '__main__':
     #test
     Z = torch.tensor(np.arange(1, 91))
@@ -40,3 +49,4 @@ if __name__ == '__main__':
         return -x
     print(find_median_distance(Z.t(), Z.t()))
     print(ratio_median_heuristic(Z.t(), score_function))
+

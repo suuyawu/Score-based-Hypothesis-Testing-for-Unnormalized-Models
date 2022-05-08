@@ -21,9 +21,18 @@ class GaussianMixture(object):
         """Create a Gaussian Mixture Model"""
         self.weight = torch.exp(params['logweight'])
         self.mean = params['mean']
-        self.var = torch.exp(params['logvar'])
+        self.logvar = params['logvar']
         self.model = [Normal(_mean, torch.sqrt(_var)) 
-                        for (_mean, _var) in zip(self.mean, self.var)]
+                        for (_mean, _var) in zip(self.mean, torch.exp(self.logvar))]
+        self.params = [self.weight, self.mean, self.logvar]
+    def train(self, param_train = 'mean'):
+        if param_train == 'mean':
+            self.mean.requires_grad_()
+        if param_train == 'logvar':
+            self.logvar.requires_grad_()
+        if param_train == 'logweight':
+            self.weight.requires_grad_()
+        self.params = [self.weight, self.mean, self.logvar]
     def pdf(self, x, item = False):
         _probs = [w*torch.exp(m.log_prob(x)) 
                     for (w, m) in zip(self.weight, self.model)]
@@ -31,6 +40,7 @@ class GaussianMixture(object):
             #for score and hyvarinen score calculation
             return _probs, sum(_probs)
         else:
+            #sum(_probs) in shape Nx1
             return sum(_probs).sum(-1)
     def cdf(self, x):
         x = x.squeeze(-1)
@@ -41,20 +51,20 @@ class GaussianMixture(object):
         x = x.squeeze(-1)
         mcdf = 0.0
         for i in range(len(self.weight)):
-            mcdf += self.weight[i].cpu().numpy() * stats.norm.cdf(x, loc=self.mean[i].cpu().numpy(), scale=np.sqrt(self.var[i].cpu().numpy()))
+            mcdf += self.weight[i].cpu().numpy() * stats.norm.cdf(x, loc=self.mean[i].cpu().numpy(), scale=np.sqrt(np.exp(self.logvar[i].cpu().numpy())))
         return mcdf
     def score(self, x):
         _probs, mpdf = self.pdf(x, item=True)
         mdpdf = sum([_prob*(-(x-mean) / var) 
-                        for (_prob, mean, var) in zip(_probs, self.mean, self.var)])
+                        for (_prob, mean, var) in zip(_probs, self.mean, torch.exp(self.logvar))])
         return mdpdf / mpdf
     def hscore(self, x):
         x = x.squeeze(-1)
         _probs, mpdf = self.pdf(x, item=True)
         mdpdf = sum([_prob*(-(x-mean) / var) 
-                        for (_prob, mean, var) in zip(_probs, self.mean, self.var)])
+                        for (_prob, mean, var) in zip(_probs, self.mean, torch.exp(self.logvar))])
         ddpdf = sum([_prob*((-(x-mean) / var)**2-1/var) 
-                        for (_prob, mean, var) in zip(_probs, self.mean, self.var)])
+                        for (_prob, mean, var) in zip(_probs, self.mean, torch.exp(self.logvar))])
         dlnpdf = mdpdf / mpdf
         hscore = -0.5*(dlnpdf**2)+ddpdf/mpdf
         return hscore
@@ -81,6 +91,40 @@ class GaussBernRBM(object):
         self.bx = params['bx']
         self.bh = params['bh']
         self.xdim, self.hdim = self.W.shape
+        self.params = [self.W, self.bx, self.bh]
+    def train(self, samples, train_epoch, param_train_name, optimizer_name = 'SGD'):
+        if param_train_name == 'W':
+            self.W.requires_grad_()
+            param_train = self.W
+        elif param_train_name == 'bx':
+            self.bx.requires_grad_()
+            param_train = self.bx
+        elif param_train_name == 'bh':
+            self.bh.requires_grad_()
+            param_train = self.bh
+        else:
+            raise ValueError('param_train_name')
+        
+        if optimizer_name == 'Adam':
+            optimizer = torch.optim.Adam([param_train], lr=0.001, betas=(0.9, 0.99))
+        elif optimizer_name == 'SGD':
+            optimizer = torch.optim.SGD([param_train], lr=0.001)
+        else:
+            raise ValueError('optimizer_name')
+        
+        #gradient descent
+        for i in range(train_epoch):
+            optimizer.zero_grad()
+            hiddens = self.hidden_given_visible(samples)
+            samples_gibbs = self.visible_given_hidden(hiddens)
+            # loss = self.free_energy(samples).mean() - self.free_energy(samples_gibbs).mean()
+            loss = self.hscore(samples_gibbs).mean()
+            loss.backward()
+            optimizer.step()
+            # print('Epoch:{}'.format(i), 'Loss:{}'.format(loss))
+        param_train.requires_grad_(False)
+        # print('training Done')
+
     def free_energy(self, x):
         """Free energy function
             F(x) = -x`b+.5*(x`x+b`b)-\sum_hdim log(1+exp(self.bx+W`x))
@@ -108,8 +152,9 @@ class GaussBernRBM(object):
         sig = torch.sigmoid(F.linear(x, self.W.t(), self.bh))
         _x_px = F.linear(sig, self.W, self.bx-x)
         _x_sig = torch.matmul(sig.unsqueeze(-1), (1-sig).unsqueeze(1))
-        _xx_px = 1-torch.matmul(torch.matmul(self.W.unsqueeze(0), _x_sig), self.W.t().unsqueeze(0))
-        _xx_px = _xx_px.diagonal(offset=0, dim1=-2, dim2=-1).sum(dim=-1) #sum the trace
+        _xx_px = -torch.sum(torch.matmul((1-sig)*(1+sig), self.W.t()**2), dim=-1)+self.bx.shape[0]
+        # _xx_px = 1-torch.matmul(torch.matmul(self.W.unsqueeze(0), _x_sig), self.W.t().unsqueeze(0))
+        # _xx_px = _xx_px.diagonal(offset=0, dim1=-2, dim2=-1).sum(dim=-1) #sum the trace
         hscore = 0.5*torch.sum(_x_px**2, dim=-1)-_xx_px
         return hscore
     def visible_given_hidden(self, h):
