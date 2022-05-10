@@ -1,0 +1,17 @@
+---
+# control
+control:
+  data_name: gmm
+  test_mode: hsd
+  perturb: 1
+  num_alter: 100
+  noise: 0
+# experiment
+num_workers: 0
+init_seed: 0
+num_experiments: 1
+log_interval: 0.25
+device: cuda
+world_size: 1
+resume_mode: 0
+verbose: False
