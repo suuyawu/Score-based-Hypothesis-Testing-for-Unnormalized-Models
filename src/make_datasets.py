@@ -16,17 +16,30 @@ args = vars(parser.parse_args())
 process_args(args)
 
 num_trials = 1000
-num_samples = 1000
+num_samples = 500
 
 if __name__ == "__main__":
     data_names = ['GMM']
     for i in range(len(data_names)):
-        logweight = torch.log(torch.tensor([0.2, 0.8]))
-        mean = torch.tensor([0., 5.])
-        logvar = torch.tensor([0., 0.])
-        ptb_logweight = 0.
-        ptb_mean = 0.1
-        ptb_logvar = 0
-        param = {'num_trials': num_trials, 'num_samples': num_samples, 'logweight': logweight, 'mean': mean,
-                 'logvar': logvar, 'ptb_logweight': ptb_logweight, 'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
+        data_name = data_names[i]
+        if data_name == 'MVN':
+            mean = torch.tensor([0., 5.])
+            logvar = torch.tensor([[1., 0.1], [0.1, 1.]])
+            ptb_mean = 0.1
+            ptb_logvar = 0.1
+            param = {'num_trials': num_trials, 'num_samples': num_samples,
+                     'mean': mean, 'logvar': logvar,
+                     'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
+        elif data_name == 'GMM':
+            logweight = torch.log(torch.tensor([0.2, 0.7, 0.1]))
+            mean = torch.tensor([[0., 0.], [5., 0.], [1., 2.]])
+            logvar = torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]])
+            ptb_logweight = 0.
+            ptb_mean = 0.1
+            ptb_logvar = 0.1
+            param = {'num_trials': num_trials, 'num_samples': num_samples,
+                     'mean': mean, 'logvar': logvar, 'logweight': logweight,
+                     'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
+        else:
+            raise ValueError('Not valid data name')
         dataset = fetch_dataset(data_names[i], param)
