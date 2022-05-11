@@ -19,7 +19,10 @@ num_trials = 1000
 num_samples = 500
 
 if __name__ == "__main__":
-    data_names = ['GMM']
+    seed = 0
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    data_names = ['RBM']
     for i in range(len(data_names)):
         data_name = data_names[i]
         if data_name == 'MVN':
@@ -27,7 +30,7 @@ if __name__ == "__main__":
             logvar = torch.tensor([[1., 0.1], [0.1, 1.]])
             ptb_mean = 0.1
             ptb_logvar = 0.1
-            param = {'num_trials': num_trials, 'num_samples': num_samples,
+            params = {'num_trials': num_trials, 'num_samples': num_samples,
                      'mean': mean, 'logvar': logvar,
                      'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
         elif data_name == 'GMM':
@@ -37,9 +40,19 @@ if __name__ == "__main__":
             ptb_logweight = 0.
             ptb_mean = 0.1
             ptb_logvar = 0.1
-            param = {'num_trials': num_trials, 'num_samples': num_samples,
+            params = {'num_trials': num_trials, 'num_samples': num_samples,
                      'mean': mean, 'logvar': logvar, 'logweight': logweight,
                      'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
+        elif data_name == 'RBM':
+            dim_v = 50
+            dim_h = 40
+            W = torch.randn(dim_v, dim_h)
+            v = torch.randn(dim_v)
+            h = torch.randn(dim_h)
+            ptb_W = 0.1
+            num_iters = 200
+            params = {'num_trials': num_trials, 'num_samples': num_samples,
+                     'W': W, 'v': v, 'h': h, 'ptb_W': ptb_W, 'num_iters': num_iters}
         else:
             raise ValueError('Not valid data name')
-        dataset = fetch_dataset(data_names[i], param)
+        dataset = fetch_dataset(data_names[i], params)

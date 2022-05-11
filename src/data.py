@@ -19,7 +19,7 @@ def fetch_dataset(data_name, param, verbose=True):
     elif data_name in ['GMM']:
         dataset = datasets.GMM(root, **param)
     elif data_name in ['RBM']:
-        pass
+        dataset = datasets.RBM(root, **param)
     else:
         raise ValueError('Not valid dataset name')
     if verbose:

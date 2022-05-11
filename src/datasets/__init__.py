@@ -1,5 +1,5 @@
+from .mvn import MVN
 from .gmm import GMM
-from . mvn import MVN
+from .rbm import RBM
 from .utils import *
 
-__all__ = ('GMM')

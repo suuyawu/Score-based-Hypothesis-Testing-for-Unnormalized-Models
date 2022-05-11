@@ -23,8 +23,8 @@ class GMM(Dataset):
         self.footprint = m.hexdigest()
         if not check_exists(self.processed_folder):
             self.process()
-        self.null, self.alter, self.meta = load(os.path.join(self.processed_folder, 'GMM_{}'.format(self.footprint)),
-                                                mode='pickle')
+        self.null, self.alter, self.meta = load(
+            os.path.join(self.processed_folder, '{}_{}'.format(self.data_name, self.footprint)), mode='pickle')
 
     def __getitem__(self, index):
         null, alter = torch.tensor(self.null[index]), torch.tensor(self.alter[index])
@@ -51,7 +51,8 @@ class GMM(Dataset):
         if not check_exists(self.raw_folder):
             self.download()
         dataset = self.make_data()
-        save(dataset, os.path.join(self.processed_folder, 'GMM_{}'.format(self.footprint)), mode='pickle')
+        save(dataset, os.path.join(self.processed_folder, '{}_{}'.format(self.data_name, self.footprint)),
+             mode='pickle')
         return
 
     def download(self):
@@ -59,8 +60,8 @@ class GMM(Dataset):
         return
 
     def __repr__(self):
-        fmt_str = 'Dataset {}\nSize: {}\nRoot: {}\nFootprint: {}'.format(
-            self.__class__.__name__, self.__len__(), self.root, self.footprint)
+        fmt_str = 'Dataset {}\nSize: {}\nRoot: {}\nFootprint: {}'.format(self.data_name, self.__len__(), self.root,
+                                                                         self.footprint)
         return fmt_str
 
     def make_data(self):
