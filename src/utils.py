@@ -106,70 +106,10 @@ def recur(fn, input, *args):
     return output
 
 
-def process_dataset(dataset):
-    cfg['data_size'] = {'train': len(dataset['train']), 'test': len(dataset['test'])}
-    cfg['target_size'] = dataset['train'].target_size
-    return
-
-
 def process_control():
-    cfg['data_split_mode'] = cfg['control']['data_split_mode']
-    data_shape = {'MNIST': [1, 28, 28], 'FashionMNIST': [1, 28, 28], 'SVHN': [3, 32, 32], 'CIFAR10': [3, 32, 32],
-                  'CIFAR100': [3, 32, 32]}
-    cfg['linear'] = {}
-    cfg['mlp'] = {'hidden_size': 128, 'scale_factor': 2, 'num_layers': 2, 'activation': 'relu'}
-    cfg['conv'] = {'hidden_size': [64, 128, 256, 512]}
-    cfg['resnet9'] = {'hidden_size': [64, 128, 256, 512]}
-    cfg['resnet18'] = {'hidden_size': [64, 128, 256, 512]}
-    cfg['wresnet28x2'] = {'depth': 28, 'widen_factor': 2, 'drop_rate': 0.0}
-    cfg['wresnet28x8'] = {'depth': 28, 'widen_factor': 8, 'drop_rate': 0.0}
-    cfg['teacher_data_name'] = cfg['control']['teacher_data_name']
-    cfg['teacher_data_shape'] = data_shape[cfg['teacher_data_name']]
-    cfg['teacher_model_name'] = cfg['control']['teacher_model_name']
-    cfg['num_teachers'] = int(cfg['control']['num_teachers'])
-    cfg['teacher'] = {}
-    cfg['teacher']['shuffle'] = {'train': True, 'test': False}
-    cfg['teacher']['optimizer_name'] = 'SGD'
-    cfg['teacher']['lr'] = 3e-2
-    cfg['teacher']['momentum'] = 0.9
-    cfg['teacher']['weight_decay'] = 5e-4
-    cfg['teacher']['nesterov'] = True
-    cfg['teacher']['scheduler_name'] = 'CosineAnnealingLR'
-    if cfg['teacher_model_name'] in ['linear', 'mlp']:
-        cfg['teacher']['num_epochs'] = 100
-    else:
-        cfg['teacher']['num_epochs'] = 400
-    cfg['teacher']['batch_size'] = {'train': 250, 'test': 500}
-    if 'student_data_name' in cfg['control']:
-        cfg['student_data_name'] = cfg['control']['student_data_name']
-        cfg['student_data_shape'] = data_shape[cfg['student_data_name']]
-        cfg['student_model_name'] = cfg['control']['student_model_name']
-        cfg['loss_mode'] = cfg['control']['loss_mode']
-        cfg['student'] = {}
-        cfg['student']['shuffle'] = {'train': True, 'test': False}
-        cfg['student']['optimizer_name'] = 'SGD'
-        cfg['student']['lr'] = 3e-2
-        cfg['student']['momentum'] = 0.9
-        cfg['student']['weight_decay'] = 5e-4
-        cfg['student']['nesterov'] = True
-        cfg['student']['scheduler_name'] = 'CosineAnnealingLR'
-        cfg['student']['num_epochs'] = 400
-        cfg['student']['batch_size'] = {'train': 250, 'test': 500}
-        cfg['student']['num_iter'] = 100
-        if cfg['student_data_name'] == 'GEN':
-            cfg['generator_model_name'] = 'generator'
-            init_shape = {'MNIST': [7, 7], 'SVHN': [8, 8], 'CIFAR10': [8, 8], 'CIFAR100': [8, 8]}
-            cfg['generator'] = {'init_shape': init_shape[cfg['student_data_name']], 'latent_size': 1000,
-                                'hidden_size': [128, 64]}
-            cfg['generator']['shuffle'] = {'train': True, 'test': False}
-            cfg['generator']['optimizer_name'] = 'Adam'
-            cfg['generator']['lr'] = 2e-2
-            cfg['generator']['betas'] = (0.9, 0.999)
-            cfg['generator']['weight_decay'] = 0
-            cfg['generator']['scheduler_name'] = 'None'
-            cfg['student']['num_epochs'] = 2000
-            cfg['student']['batch_size'] = {'train': 1000, 'test': 1000}
-            cfg['student']['num_iter'] = 100
+    cfg['ht'] = {}
+    cfg['ht']['batch_size'] = {'test': 500}
+    cfg['ht']['shuffle'] = {'test': False}
     return
 
 
@@ -265,9 +205,8 @@ def resume(path, verbose=True, resume_mode=1):
 
 def collate(input):
     for k in input:
-        if k == 'teacher_target':
-            input[k] = list(map(list, zip(*input[k])))
-            input[k] = [torch.stack(input[k][i], dim=0) for i in range(len(input[k]))]
+        if k in ['null_param', 'alter_param']:
+            input[k] = input[k][0]
         else:
             input[k] = torch.stack(input[k], 0)
     return input

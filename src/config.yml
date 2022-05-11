@@ -1,11 +1,11 @@
 ---
 # control
 control:
-  data_name: gmm
+  data_name: MVN
   test_mode: hsd
-  perturb: 1
-  num_alter: 100
-  noise: 0
+  ptb: 0.1-0.1
+  alter_num_samples: 100
+  alter_noise: 0
 # experiment
 num_workers: 0
 init_seed: 0

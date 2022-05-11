@@ -9,6 +9,7 @@ class MVN(Dataset):
     data_name = 'MVN'
 
     def __init__(self, root, **params):
+        super().__init__()
         self.root = os.path.expanduser(root)
         self.num_trials = params['num_trials']
         self.num_samples = params['num_samples']
@@ -19,22 +20,22 @@ class MVN(Dataset):
         hash_name = '_'.join([str(params[x]) for x in params]).encode('utf-8')
         m = hashlib.sha256(hash_name)
         self.footprint = m.hexdigest()
-        if not check_exists(self.processed_folder):
+        split_name = '{}_{}'.format(self.data_name, self.footprint)
+        if not check_exists(os.path.join(self.processed_folder, split_name)):
             self.process()
-        self.null, self.alter, self.meta = load(
-            os.path.join(self.processed_folder, '{}_{}'.format(self.data_name, self.footprint)), mode='pickle')
+        self.null, self.alter, self.meta = load(os.path.join(os.path.join(self.processed_folder, split_name)),
+                                                mode='pickle')
 
     def __getitem__(self, index):
         null, alter = torch.tensor(self.null[index]), torch.tensor(self.alter[index])
-        null_param = {'mean': torch.tensor(self.mean),
-                      'logvar': torch.tensor(self.logvar)}
+        null_param = {'mean': self.mean, 'logvar': self.logvar}
         alter_param = {'mean': torch.tensor(self.meta['mean'][index]),
                        'logvar': torch.tensor(self.meta['logvar'][index])}
         input = {'null': null, 'alter': alter, 'null_param': null_param, 'alter_param': alter_param}
         return input
 
     def __len__(self):
-        return len(self.data)
+        return self.num_trials
 
     @property
     def processed_folder(self):

@@ -11,6 +11,7 @@ class RBM(Dataset):
     data_name = 'RBM'
 
     def __init__(self, root, **params):
+        super().__init__()
         self.root = os.path.expanduser(root)
         self.num_trials = params['num_trials']
         self.num_samples = params['num_samples']
@@ -22,21 +23,21 @@ class RBM(Dataset):
         hash_name = '_'.join([str(params[x]) for x in params]).encode('utf-8')
         m = hashlib.sha256(hash_name)
         self.footprint = m.hexdigest()
-        if not check_exists(self.processed_folder):
+        split_name = '{}_{}'.format(self.data_name, self.footprint)
+        if not check_exists(os.path.join(self.processed_folder, split_name)):
             self.process()
-        self.null, self.alter, self.meta = load(
-            os.path.join(self.processed_folder, '{}_{}'.format(self.data_name, self.footprint)), mode='pickle')
+        self.null, self.alter, self.meta = load(os.path.join(os.path.join(self.processed_folder, split_name)),
+                                                mode='pickle')
 
     def __getitem__(self, index):
         null, alter = torch.tensor(self.null[index]), torch.tensor(self.alter[index])
-        null_param = {'W': torch.tensor(self.W), 'v': torch.tensor(self.v), 'h': torch.tensor(self.h)}
-        alter_param = {'W': torch.tensor(self.meta['W'][index]), 'v': torch.tensor(self.v),
-                       'h': torch.tensor(self.h)}
+        null_param = {'W': self.W, 'v': self.v, 'h': self.h}
+        alter_param = {'W': torch.tensor(self.meta['W'][index]), 'v': self.v, 'h': self.h}
         input = {'null': null, 'alter': alter, 'null_param': null_param, 'alter_param': alter_param}
         return input
 
     def __len__(self):
-        return len(self.data)
+        return self.num_trials
 
     @property
     def processed_folder(self):
@@ -79,9 +80,9 @@ class RBM(Dataset):
                 null.append(null_i.cpu())
                 alter.append(alter_i.cpu())
                 alter_W.append(alter_W_i.cpu())
-            null = torch.cat(null, dim=0)
-            alter = torch.cat(alter, dim=0)
-            alter_W = torch.cat(alter_W, dim=0)
+            null = torch.stack(null, dim=0)
+            alter = torch.stack(alter, dim=0)
+            alter_W = torch.stack(alter_W, dim=0)
             null, alter = null.numpy(), alter.numpy()
             meta = {'W': alter_W.numpy()}
         return null, alter, meta

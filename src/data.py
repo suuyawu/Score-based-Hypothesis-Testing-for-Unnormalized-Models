@@ -15,11 +15,11 @@ def fetch_dataset(data_name, param, verbose=True):
         print('fetching data {}...'.format(data_name))
     root = os.path.join('data', data_name)
     if data_name in ['MVN']:
-        dataset = datasets.MVN(root, **param)
+        dataset['test'] = datasets.MVN(root, **param)
     elif data_name in ['GMM']:
-        dataset = datasets.GMM(root, **param)
+        dataset['test'] = datasets.GMM(root, **param)
     elif data_name in ['RBM']:
-        dataset = datasets.RBM(root, **param)
+        dataset['test'] = datasets.RBM(root, **param)
     else:
         raise ValueError('Not valid dataset name')
     if verbose:

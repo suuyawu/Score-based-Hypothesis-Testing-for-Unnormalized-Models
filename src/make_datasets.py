@@ -2,10 +2,9 @@ import argparse
 import os
 import torch
 import torch.backends.cudnn as cudnn
-import models
 from config import cfg, process_args
 from data import fetch_dataset
-from utils import save, process_control, process_dataset, makedir_exist_ok
+from utils import save
 
 cudnn.benchmark = True
 parser = argparse.ArgumentParser(description='cfg')
@@ -22,7 +21,8 @@ if __name__ == "__main__":
     seed = 0
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    data_names = ['RBM']
+    data_names = ['MVN', 'GMM', 'RBM']
+    null_params = {}
     for i in range(len(data_names)):
         data_name = data_names[i]
         if data_name == 'MVN':
@@ -30,9 +30,9 @@ if __name__ == "__main__":
             logvar = torch.tensor([[1., 0.1], [0.1, 1.]])
             ptb_mean = 0.1
             ptb_logvar = 0.1
-            params = {'num_trials': num_trials, 'num_samples': num_samples,
-                     'mean': mean, 'logvar': logvar,
-                     'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
+            null_params[data_name] = {'num_trials': num_trials, 'num_samples': num_samples,
+                                      'mean': mean, 'logvar': logvar,
+                                      'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
         elif data_name == 'GMM':
             logweight = torch.log(torch.tensor([0.2, 0.7, 0.1]))
             mean = torch.tensor([[0., 0.], [5., 0.], [1., 2.]])
@@ -40,9 +40,9 @@ if __name__ == "__main__":
             ptb_logweight = 0.
             ptb_mean = 0.1
             ptb_logvar = 0.1
-            params = {'num_trials': num_trials, 'num_samples': num_samples,
-                     'mean': mean, 'logvar': logvar, 'logweight': logweight,
-                     'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
+            null_params[data_name] = {'num_trials': num_trials, 'num_samples': num_samples,
+                                      'mean': mean, 'logvar': logvar, 'logweight': logweight,
+                                      'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
         elif data_name == 'RBM':
             dim_v = 50
             dim_h = 40
@@ -51,8 +51,9 @@ if __name__ == "__main__":
             h = torch.randn(dim_h)
             ptb_W = 0.1
             num_iters = 200
-            params = {'num_trials': num_trials, 'num_samples': num_samples,
-                     'W': W, 'v': v, 'h': h, 'ptb_W': ptb_W, 'num_iters': num_iters}
+            null_params[data_name] = {'num_trials': num_trials, 'num_samples': num_samples,
+                                      'W': W, 'v': v, 'h': h, 'ptb_W': ptb_W, 'num_iters': num_iters}
         else:
             raise ValueError('Not valid data name')
-        dataset = fetch_dataset(data_names[i], params)
+        dataset = fetch_dataset(data_names[i], null_params[data_name])
+    save(null_params, os.path.join('output', 'null', 'params.pkl'))
