@@ -18,7 +18,7 @@ num_trials = 1000
 num_samples = 500
 
 if __name__ == "__main__":
-    seed = 0
+    seed = 1
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     data_names = ['MVN', 'GMM', 'RBM']

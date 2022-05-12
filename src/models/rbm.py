@@ -26,31 +26,30 @@ class RBM(nn.Module):
             F(x) = -x`b+.5*(x`x+b`b)-\sum_hdim log(1+exp(self.v+W`x))
         """
         v_term = torch.matmul(v, self.v) - 0.5 * torch.sum(v ** 2, dim=-1) - 0.5 * torch.sum(self.v ** 2, dim=-1)
-        w_v_h = F.linear(v, self.W, self.h)
+        w_v_h = F.linear(v, self.W.t(), self.h)
         h_term = torch.sum(F.softplus(w_v_h), dim=-1)
-        fe = (-v_term - h_term).mean()
-        return fe
+        return -v_term - h_term #(n, )
 
     def pdf(self, x):
         """Unnormalized probability
             \tilde(p)(x) = exp(-F(x))
         """
-        return torch.exp(-self.free_energy(x))
+        return torch.exp(-self.free_energy(x)) #(n, )
 
     def score(self, v):
         """Score function for Gaussian-Bernoulli RBM,
             s(x) = b-x+sigmoid(xW+c)W`
         """
-        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
-        _x_px = F.linear(sig, self.W, self.v - v)
+        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h ))
+        _x_px = F.linear(sig, self.W , self.v  - v)
         return _x_px
 
     def hscore(self, v):
         """Hyvarinen score for Gaussian-Bernoulli RBM,
             s_H(x) = 0.5*||grad_log_px||^2+trace(grad_grad_log_px)
         """
-        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
-        _x_px = F.linear(sig, self.W, self.v - v)
+        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h ))
+        _x_px = F.linear(sig, self.W , self.v  - v)
         _x_sig = torch.matmul(sig.unsqueeze(-1), (1 - sig).unsqueeze(1))
         _xx_px = -torch.sum(torch.matmul((1 - sig) * (1 + sig), self.W.t() ** 2), dim=-1) + self.v.shape[0]
         hs = 0.5 * torch.sum(_x_px ** 2, dim=-1) - _xx_px
@@ -61,7 +60,6 @@ class RBM(nn.Module):
             h = self.visible_to_hidden(v)
             v = self.hidden_to_visible(h)
         return v
-
 
 def rbm(W, v, h):
     model = RBM(W, v, h)
