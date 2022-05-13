@@ -76,7 +76,7 @@ def make_params(data_name):
     else:
         raise ValueError('Not valid data name')
     footprint = make_footprint(params)
-    params = load(os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+    params = load(os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
     return params
 
 

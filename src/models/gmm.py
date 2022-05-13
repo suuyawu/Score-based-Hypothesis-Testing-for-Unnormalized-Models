@@ -43,23 +43,15 @@ class GMM(nn.Module):
     def cdf_numpy(self, x):
         return self.cdf(x).cpu().numpy()
 
-    # def cdf_numpy(self, x):
-    #     # numpy computation for ks test and cramer-von mises tests
-    #     mcdf = 0.0
-    #     mean_double_numpy = self.mean.type(torch.float64).cpu().numpy()
-    #     logvar_double_numpy = self.logvar.type(torch.float64).cpu().numpy()
-    #     logweight_double_numpy = self.logweight.type(torch.float64).cpu().numpy()
-    #
-    #     for i in range(len(logweight_double_numpy)):
-    #         mcdf += logweight_double_numpy.exp()[i] * stats.multivariate_normal.cdf(x, loc=mean_double_numpy[i],
-    #                                                                                 scale=np.sqrt(
-    #                                                                                     np.exp(logvar_double_numpy[i])))
-    #     return mcdf
-
     def score(self, x):
         _probs, mpdf = self.pdf(x, item=True)
+        for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp()):
+            print(x.size(), mean.size(), var.size())
+            print(_prob * (-(x - mean) / var).size())
+        exit()
         mdpdf = sum([_prob * (-(x - mean) / var)
                      for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
+        print(mdpdf.size())
         return mdpdf / mpdf
 
     def hscore(self, x):

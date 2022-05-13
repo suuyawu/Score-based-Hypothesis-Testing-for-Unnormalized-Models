@@ -36,7 +36,7 @@ if __name__ == "__main__":
                             'ptb_mean': ptb_mean_i, 'ptb_logvar': ptb_logvar}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
-                save(params_i, os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
             ptb_logvar = [0, 0.1]
             for i in range(len(ptb_logvar)):
                 ptb_logvar_i = float(ptb_logvar[i])
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                             'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar_i}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
-                save(params_i, os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
         elif data_name == 'GMM':
             mean = cfg['gmm']['mean']
             logvar = cfg['gmm']['logvar']
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                             'ptb_mean': ptb_mean_i, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
-                save(params_i, os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
             ptb_logvar = [0, 0.1]
             for i in range(len(ptb_logvar)):
                 ptb_mean = float(0)
@@ -72,7 +72,7 @@ if __name__ == "__main__":
                             'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar_i, 'ptb_logweight': ptb_logweight}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
-                save(params_i, os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
             ptb_logweight = [0, 0.1]
             for i in range(len(ptb_logweight)):
                 ptb_mean = float(0)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
                             'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight_i}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
-                save(params_i, os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
         elif data_name == 'RBM':
             W = cfg['rbm']['W']
             v = cfg['rbm']['v']
@@ -97,6 +97,6 @@ if __name__ == "__main__":
                             'num_iters': num_iters, 'ptb_W': ptb_W_i}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
-                save(params_i, os.path.join('output', 'params', '{}_{}.pkl'.format(data_name, footprint)))
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
         else:
             raise ValueError('Not valid data name')

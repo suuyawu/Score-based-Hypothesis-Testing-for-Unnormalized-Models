@@ -18,7 +18,10 @@ class MVN(nn.Module):
             self.model = MultivariateNormal(mean, logvar.exp().sqrt())
     
     def pdf(self, x):
-        return self.model.log_prob(x).exp()
+        if self.d == 1:
+            x = x.squeeze(-1)
+        pdf_ = self.model.log_prob(x).exp()
+        return pdf_
     
     def cdf(self, x):
         if type(x) is np.ndarray:
@@ -29,14 +32,22 @@ class MVN(nn.Module):
         return self.cdf(x).cpu().numpy()
     
     def score(self, x):
-        return -1 * torch.matmul((x - self.mean), torch.linalg.inv(self.logvar.exp()))
+        if self.d == 1:
+            score_ = -1 * torch.matmul((x - self.mean), self.logvar.exp()**(-1)).view(-1, 1)
+        else:
+            score_ = -1 * torch.matmul((x - self.mean), torch.linalg.inv(self.logvar.exp()))
+        return score_
 
     def hscore(self, x):
-        invcov = torch.linalg.inv(self.logvar.exp())
-        mean = self.mean.unsqueeze(0)
-        t1 = 0.5 * torch.matmul(torch.matmul(torch.matmul((x - mean), invcov), invcov),
-                                (x - mean).t())
-        t2 = - invcov.diagonal().sum()
+        mean = self.mean
+        if self.d == 1:
+            invcov = self.logvar.exp()**(-1)
+            t1 = ((x - mean) * invcov * invcov).matmul((x - mean).transpose(-1, -2))
+            t2 = - invcov.sum()
+        else:
+            invcov = torch.linalg.inv(self.logvar.exp())
+            t1 = 0.5 * (x - mean).matmul(invcov).matmul(invcov).matmul((x - mean).transpose(-1, -2))
+            t2 = - invcov.diagonal().sum()
         t1 = t1.diagonal()
         hs = t1 + t2
         return hs

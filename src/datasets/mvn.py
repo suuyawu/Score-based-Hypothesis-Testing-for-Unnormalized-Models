@@ -71,7 +71,10 @@ class MVN(Dataset):
         null = null.view(self.num_trials, self.num_samples, -1)
         ptb_mean = self.ptb_mean * torch.randn((self.num_trials, *self.mean.size()))
         alter_mean = self.mean + ptb_mean
-        ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials, d)))
+        if d == 1:
+            ptb_logvar = self.ptb_logvar * torch.randn((self.num_trials, *self.logvar.size()))
+        else:
+            ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials, d)))
         alter_logvar = self.logvar + ptb_logvar
         if d == 1:
             alter_normal = torch.distributions.normal.Normal(alter_mean, self.logvar.exp())

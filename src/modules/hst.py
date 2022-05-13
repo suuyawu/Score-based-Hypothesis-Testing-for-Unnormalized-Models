@@ -26,9 +26,10 @@ class HST:
     def m_out_n_bootstrap(self, num_samples_null, num_samples_alter, null_samples, null_model,
                           alter_model):
         """Bootstrap algorithm (m out of n) for hypothesis testing by Bickel & Ren (2001)"""
-        null_items, test = self.hst(null_samples, null_model.hscore, alter_model.hscore)
-        _index = torch.multinomial(torch.ones(num_samples_null).repeat(self.num_bootstrap, 1) / num_samples_null,
-                                   num_samples_alter, replacement=True)
+        null_items, _ = self.hst(null_samples, null_model.hscore, alter_model.hscore)
+        _index = torch.multinomial(
+            null_items.new_ones(num_samples_null).repeat(self.num_bootstrap, 1) / num_samples_null, num_samples_alter,
+            replacement=True)
         bootstrap_null_items = torch.gather(null_items.repeat(self.num_bootstrap, 1), 1, _index)
         bootstrap_null_samples = torch.sum(bootstrap_null_items, dim=-1)
         return bootstrap_null_samples
@@ -38,7 +39,8 @@ class HST:
         Hscore_items = -alter_hscore(samples) + null_hscore(samples)
         # To calculate the scalar for chi2 distribution approximation under the null
         # Hscore_items = Hscore_items*scalar
-        return Hscore_items, torch.sum(Hscore_items, -1)
+        test_statistic = torch.sum(Hscore_items, -1)
+        return Hscore_items, test_statistic
 
     def density_test(self, alter_samples, bootstrap_null_samples, null_model, alter_model, bootstrap_approx):
         _, test_statistic = self.hst(alter_samples, null_model.hscore, alter_model.hscore)

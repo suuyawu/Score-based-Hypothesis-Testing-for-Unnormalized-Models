@@ -27,7 +27,7 @@ class LRT:
 
     def m_out_n_bootstrap(self, num_samples_null, num_samples_alter, null_samples, null_model, alter_model):
         """Bootstrap algorithm (m out of n) for hypothesis testing by Bickel & Ren (2001)"""
-        null_items, test = self.lrt(null_samples, null_model.pdf, alter_model.pdf)
+        null_items, _ = self.lrt(null_samples, null_model.pdf, alter_model.pdf)
         _index = torch.multinomial(
             null_items.new_ones(num_samples_null).repeat(self.num_bootstrap, 1) / num_samples_null, num_samples_alter,
             replacement=True)
@@ -39,7 +39,8 @@ class LRT:
     def lrt(self, samples, null_pdf, alter_pdf):
         """Calculate Likelihood Ratio"""
         LRT_items = 2 * (torch.log(alter_pdf(samples)) - torch.log(null_pdf(samples)))
-        return LRT_items, torch.sum(LRT_items, -1)
+        test_statistic = torch.sum(LRT_items, -1)
+        return LRT_items, test_statistic
 
     def density_test(self, alter_samples, bootstrap_null_samples, null_model, alter_model, bootstrap_approx):
         _, test_statistic = self.lrt(alter_samples, null_model.pdf, alter_model.pdf)
