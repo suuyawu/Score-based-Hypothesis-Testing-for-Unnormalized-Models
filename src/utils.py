@@ -1,5 +1,6 @@
 import collections.abc as container_abcs
 import errno
+import hashlib
 import numpy as np
 import os
 import pickle
@@ -107,9 +108,28 @@ def recur(fn, input, *args):
 
 
 def process_control():
-    cfg['ht'] = {}
-    cfg['ht']['batch_size'] = {'test': 500}
-    cfg['ht']['shuffle'] = {'test': False}
+    cfg['data_name'] = cfg['control']['data_name']
+    cfg['test_mode'] = cfg['control']['test_mode']
+    cfg['ptb'] = cfg['control']['ptb']
+    cfg['alter_num_samples'] = int(cfg['control']['alter_num_samples'])
+    cfg['alter_noise'] = float(cfg['control']['alter_noise'])
+    cfg['num_trials'] = 1000
+    cfg['num_samples'] = 1000
+    cfg['gof'] = {}
+    cfg['gof']['batch_size'] = {'test': 500}
+    cfg['gof']['shuffle'] = {'test': False}
+    cfg['mvn'] = {'mean': torch.tensor([0., 5.]), 'logvar': torch.tensor([[1., 0.1], [0.1, 1.]])}
+    cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [5., 0.], [2., 5.]]),
+                  'logvar': torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]]),
+                  'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2]))}
+    dim_v = 50
+    dim_h = 40
+    generator = torch.Generator()
+    generator.manual_seed(cfg['seed'])
+    W = torch.randn(dim_v, dim_h, generator=generator)
+    v = torch.randn(dim_v, generator=generator)
+    h = torch.randn(dim_h, generator=generator)
+    cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': 100}
     return
 
 
@@ -210,3 +230,10 @@ def collate(input):
         else:
             input[k] = torch.stack(input[k], 0)
     return input
+
+
+def make_footprint(params):
+    hash_name = '_'.join([str(params[x]) for x in params]).encode('utf-8')
+    m = hashlib.sha256(hash_name)
+    footprint = m.hexdigest()
+    return footprint

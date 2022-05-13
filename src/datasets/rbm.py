@@ -3,7 +3,7 @@ import torch
 import hashlib
 import models
 from torch.utils.data import Dataset
-from utils import check_exists, makedir_exist_ok, save, load
+from utils import check_exists, makedir_exist_ok, save, load, make_footprint
 from config import cfg
 
 
@@ -20,11 +20,10 @@ class RBM(Dataset):
         self.h = params['h']
         self.num_iters = params['num_iters']
         self.ptb_W = params['ptb_W']
-        hash_name = '_'.join([str(params[x]) for x in params]).encode('utf-8')
-        m = hashlib.sha256(hash_name)
-        self.footprint = m.hexdigest()
+        self.footprint = make_footprint(params)
         split_name = '{}_{}'.format(self.data_name, self.footprint)
         if not check_exists(os.path.join(self.processed_folder, split_name)):
+            print('Not exists {}, create from scratch with {}.'.format(split_name, params))
             self.process()
         self.null, self.alter, self.meta = load(os.path.join(os.path.join(self.processed_folder, split_name)),
                                                 mode='pickle')

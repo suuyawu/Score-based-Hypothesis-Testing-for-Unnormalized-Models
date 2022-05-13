@@ -6,7 +6,7 @@ import models
 from config import cfg, process_args
 from data import fetch_dataset, make_data_loader
 from metrics import Metric
-from utils import save, load, to_device, process_control, resume, collate
+from utils import save, load, to_device, process_control, resume, collate, make_footprint
 from logger import make_logger
 from modules import GoodnessOfFit
 
@@ -20,7 +20,6 @@ process_args(args)
 
 
 def main():
-    process_control()
     seeds = list(range(cfg['init_seed'], cfg['init_seed'] + cfg['num_experiments']))
     for i in range(cfg['num_experiments']):
         model_tag_list = [str(seeds[i]), cfg['control_name']]
@@ -32,11 +31,12 @@ def main():
 
 def runExperiment():
     cfg['seed'] = int(cfg['model_tag'].split('_')[0])
+    process_control()
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
-    null_params = make_null_params(cfg['data_name'], cfg['ptb'])
-    dataset = fetch_dataset(cfg['data_name'], null_params)
-    data_loader = make_data_loader(dataset, 'ht')
+    params = make_params(cfg['data_name'])
+    dataset = fetch_dataset(cfg['data_name'], params)
+    data_loader = make_data_loader(dataset, 'gof')
     gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
     metric = Metric(cfg['data_name'], {'test': ['Power']})
     logger = make_logger(os.path.join('output', 'runs', 'test_{}'.format(cfg['model_tag'])))
@@ -46,10 +46,37 @@ def runExperiment():
     return
 
 
-def make_null_params(data_name, ptb):
-    null_params = load(os.path.join('output', 'null', 'params.pkl'))
-    null_params = null_params[data_name][ptb]
-    return null_params
+def make_params(data_name):
+    if data_name == 'MVN':
+        mean = cfg['mvn']['mean']
+        logvar = cfg['mvn']['logvar']
+        ptb_mean, ptb_logvar = cfg['ptb'].split('-')
+        ptb_mean, ptb_logvar = float(ptb_mean), float(ptb_logvar)
+        params = {'num_trials': cfg['num_trials'], 'num_samples': cfg['num_samples'], 'mean': mean, 'logvar': logvar,
+                  'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
+    elif data_name == 'GMM':
+        mean = cfg['gmm']['mean']
+        logvar = cfg['gmm']['logvar']
+        logweight = cfg['gmm']['logvar']
+        ptb_mean, ptb_logvar, ptb_logweight = cfg['ptb'].split('-')
+        ptb_mean, ptb_logvar, ptb_logweight = float(ptb_mean), float(ptb_logvar), float(ptb_logweight)
+        params = {'num_trials': cfg['num_trials'], 'num_samples': cfg['num_samples'],
+                  'mean': mean, 'logvar': logvar, 'logweight': logweight,
+                  'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
+    elif data_name == 'RBM':
+        W = cfg['rbm']['W']
+        v = cfg['rbm']['v']
+        h = cfg['rbm']['h']
+        num_iters = cfg['rbm']['num_iters']
+        ptb_W = float(cfg['ptb'])
+        params = {'num_trials': cfg['num_trials'], 'num_samples': cfg['num_samples'], 'W': W, 'v': v, 'h': h,
+                  'num_iters': num_iters, 'ptb_W': ptb_W}
+    else:
+        raise ValueError('Not valid data name')
+    footprint = make_footprint(params)
+    params = load(os.path.join('output', 'params', 'params.pkl'))
+    params = params[data_name][footprint]
+    return params
 
 
 def test(data_loader, gof, metric, logger):
@@ -57,6 +84,8 @@ def test(data_loader, gof, metric, logger):
         logger.safe(True)
         input = collate(input)
         input = to_device(input, cfg['device'])
+        print(input)
+        exit()
         output = gof.test(input)
         evaluation = metric.evaluate(metric.metric_name['test'], input, output)
         logger.append(evaluation, 'test', 1)

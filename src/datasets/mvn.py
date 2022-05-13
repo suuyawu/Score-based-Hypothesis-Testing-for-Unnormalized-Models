@@ -2,7 +2,7 @@ import os
 import torch
 import hashlib
 from torch.utils.data import Dataset
-from utils import check_exists, makedir_exist_ok, save, load
+from utils import check_exists, makedir_exist_ok, save, load, make_footprint
 
 
 class MVN(Dataset):
@@ -17,11 +17,10 @@ class MVN(Dataset):
         self.logvar = params['logvar']
         self.ptb_mean = params['ptb_mean']
         self.ptb_logvar = params['ptb_logvar']
-        hash_name = '_'.join([str(params[x]) for x in params]).encode('utf-8')
-        m = hashlib.sha256(hash_name)
-        self.footprint = m.hexdigest()
+        self.footprint = make_footprint(params)
         split_name = '{}_{}'.format(self.data_name, self.footprint)
         if not check_exists(os.path.join(self.processed_folder, split_name)):
+            print('Not exists {}, create from scratch with {}.'.format(split_name, params))
             self.process()
         self.null, self.alter, self.meta = load(os.path.join(os.path.join(self.processed_folder, split_name)),
                                                 mode='pickle')

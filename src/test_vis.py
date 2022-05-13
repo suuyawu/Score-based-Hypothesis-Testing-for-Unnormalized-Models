@@ -48,25 +48,24 @@ def vis(null_model, alter_model, null, alter, data_name):
 
 
 if __name__ == "__main__":
-    process_control()
     cfg['seed'] = 0
+    process_control()
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
     data_names = ['MVN', 'GMM', 'RBM']
     for i in range(len(data_names)):
         data_name = data_names[i]
         if data_name == 'MVN':
-            mean = torch.tensor([0., 5.])
-            logvar = torch.tensor([[1., 0.1], [0.1, 1.]])
-            ptb_mean = 1.
+            mean = cfg['mvn']['mean']
+            logvar = cfg['mvn']['logvar']
+            ptb_mean = 1
             ptb_logvar = 0.1
-            params = {'num_trials': num_trials, 'num_samples': num_samples,
-                      'mean': mean, 'logvar': logvar,
+            params = {'num_trials': num_trials, 'num_samples': num_samples, 'mean': mean, 'logvar': logvar,
                       'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
         elif data_name == 'GMM':
-            logweight = torch.log(torch.tensor([0.2, 0.6, 0.2]))
-            mean = torch.tensor([[0., 0.], [5., 0.], [2., 5.]])
-            logvar = torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]])
+            mean = cfg['gmm']['mean']
+            logvar = cfg['gmm']['logvar']
+            logweight = cfg['gmm']['logweight']
             ptb_logweight = 0.
             ptb_mean = 5.
             ptb_logvar = 0.1
@@ -88,7 +87,7 @@ if __name__ == "__main__":
         else:
             raise ValueError('Not valid data name')
         dataset = fetch_dataset(data_names[i], params)
-        data_loader = make_data_loader(dataset, 'ht')
+        data_loader = make_data_loader(dataset, 'gof')
         input = next(iter(data_loader['test']))
         input = collate(input)
         if data_name == 'RBM':

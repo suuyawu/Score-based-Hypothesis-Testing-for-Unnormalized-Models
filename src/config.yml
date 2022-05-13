@@ -2,7 +2,7 @@
 # control
 control:
   data_name: MVN
-  test_mode: hsd
+  test_mode: cvm
   ptb: 0.1-0.1
   alter_num_samples: 100
   alter_noise: 0

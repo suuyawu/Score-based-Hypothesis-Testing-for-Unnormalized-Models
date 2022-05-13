@@ -8,7 +8,11 @@ import numpy as np
 from config import cfg
 from data import make_data_loader
 from utils import to_device, collate, make_optimizer, make_scheduler
-from modules import CVM, KS, KSD, MMD, LRT, HST
+from .nonparam import CVM, KS
+from .ksd import KSD
+from .mmd import MMD
+from .lrt import LRT
+from .hst import HST
 
 
 class GoodnessOfFit:
@@ -17,14 +21,17 @@ class GoodnessOfFit:
         self.alter_num_samples = alter_num_samples
         self.alter_noise = alter_noise
         self.alpha = alpha
-        self.gof = self.make_ht(test_mode)
+        self.gof = self.make_gof(test_mode)
 
-    def make_ht(self, test_mode):
+    def make_gof(self, test_mode):
         self.test_mode_dict = {'cvm': CVM, 'ks': KS}
         ht = self.test_mode_dict[test_mode]()
         return ht
 
     def test(self, input):
+
+
+
         null, alter, null_param, alter_param = input['null'], input['alter'], input['null_param'], input['alter_param']
         result = self.gof.test(input)
         return result
