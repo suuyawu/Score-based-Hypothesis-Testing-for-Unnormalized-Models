@@ -3,19 +3,20 @@ import torch
 
 
 class KSD:
-    def __init__(self):
+    def __init__(self, num_bootstrap, V_stat):
         super().__init__()
-        self.num_bootstrap = 1000
-        self.V_stat = False
+        self.num_bootstrap = num_bootstrap
+        self.V_stat = V_stat
 
     def test(self, null_samples, alter_samples, null_model):
-        statistic = []
-        pvalue = []
-        for i in range(len(alter_samples)):
-            # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, null_model.score)
-            statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model.score)
-            statistic.append(statistic_i)
-            pvalue.append(pvalue_i)
+        with torch.no_grad():
+            statistic = []
+            pvalue = []
+            for i in range(len(null_samples)):
+                bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], null_model.score)
+                statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model.score)
+                statistic.append(statistic_i.item())
+                pvalue.append(pvalue_i.item())
         return statistic, pvalue
 
     def multinomial_bootstrap(self, null_samples, null_score):
@@ -23,6 +24,7 @@ class KSD:
         num_samples = null_samples.size(0)
         null_items, _ = self.KSD_statistics(null_samples, null_score, V_stat=self.V_stat)
         weights_exp1, weights_exp2 = self.multinomial_weights(num_samples)
+        weights_exp1, weights_exp2 = weights_exp1.to(null_samples.device), weights_exp2.to(null_samples.device)
         null_items = torch.unsqueeze(null_items, dim=0)  # 1 x N x N
         bootstrap_null_samples = (weights_exp1 - 1. / num_samples) * null_items * (
                 weights_exp2 - 1. / num_samples)  # m x N x N
