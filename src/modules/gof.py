@@ -1,13 +1,6 @@
-import copy
-import datetime
-import time
-import sys
 import torch
 import models
-import numpy as np
 from config import cfg
-from data import make_data_loader
-from utils import to_device, collate, make_optimizer, make_scheduler
 from .nonparam import CVM, KS
 from .ksd import KSD
 from .mmd import MMD
@@ -22,6 +15,8 @@ class GoodnessOfFit:
         self.alter_noise = alter_noise
         self.alpha = alpha
         self.gof = self.make_gof()
+        self.statistic = []
+        self.pvalue = []
 
     def make_gof(self):
         if self.test_mode == 'cvm':
@@ -29,11 +24,19 @@ class GoodnessOfFit:
         elif self.test_mode == 'ks':
             gof = KS()
         elif self.test_mode == 'ksd-u':
-            gof = KSD(cfg['num_boostraps'], False)
+            gof = KSD(cfg['num_bootstrap'], False)
         elif self.test_mode == 'ksd-v':
-            gof = KSD(cfg['num_boostraps'], True)
+            gof = KSD(cfg['num_bootstrap'], True)
         elif self.test_mode == 'mmd':
-            gof = MMD(cfg['num_permutations'])
+            gof = MMD(cfg['num_bootstrap'])
+        elif self.test_mode in ['lrt-b-g', 'lrt-b-e']:
+            gof = LRT(cfg['num_bootstrap'], True)
+        elif self.test_mode in ['lrt-chi2-g', 'lrt-chi2-e']:
+            gof = LRT(cfg['num_bootstrap'], False)
+        elif self.test_mode in ['hst-b-g', 'hst-b-e']:
+            gof = HST(cfg['num_bootstrap'], True)
+        elif self.test_mode in ['hst-chi2-g', 'hst-chi2-e']:
+            gof = HST(cfg['num_bootstrap'], True)
         else:
             raise ValueError('Not valid test mode')
         return gof
@@ -42,7 +45,6 @@ class GoodnessOfFit:
         alter_noise = cfg['alter_noise']
         alter_num_samples = cfg['alter_num_samples']
         null, alter, null_param, alter_param = input['null'], input['alter'], input['null_param'], input['alter_param']
-        print(null.size(), alter.size())
         alter = alter + alter_noise * torch.randn(alter.size(), device=alter.device)
         null_samples = torch.stack(torch.split(null, alter_num_samples, dim=0), dim=0)
         alter_samples = torch.stack(torch.split(alter, alter_num_samples, dim=0), dim=0)
@@ -59,9 +61,34 @@ class GoodnessOfFit:
             null_samples = null_samples
             alter_samples = alter_samples
             statistic, pvalue = self.gof.test(null_samples, alter_samples)
+        elif self.test_mode in ['lrt-chi2-g', 'lrt-b-g']:
+            null_samples = null_samples
+            alter_samples = alter_samples
+            null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
+            alter_model = eval('models.{}(alter_param).to(cfg["device"])'.format(cfg['model_name']))
+            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model, alter_model)
+        elif self.test_mode in ['lrt-chi2-e', 'lrt-b-e']:
+            null_samples = null_samples
+            alter_samples = alter_samples
+            null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
+            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model)
+        elif self.test_mode in ['hst-chi2-g', 'hst-b-g']:
+            null_samples = null_samples
+            alter_samples = alter_samples
+            null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
+            alter_model = eval('models.{}(alter_param).to(cfg["device"])'.format(cfg['model_name']))
+            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model, alter_model)
+        elif self.test_mode in ['hst-chi2-e', 'hst-b-e']:
+            null_samples = null_samples
+            alter_samples = alter_samples
+            null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
+            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model)
         else:
             raise ValueError('Not valid test mode')
-        print(statistic)
-        print(pvalue)
-        exit()
-        return statistic, pvalue
+        output = {'statistic': statistic, 'pvalue': pvalue}
+        return output
+
+    def update(self, output):
+        self.statistic.append(output['statistic'])
+        self.pvalue.append(output['pvalue'])
+        return

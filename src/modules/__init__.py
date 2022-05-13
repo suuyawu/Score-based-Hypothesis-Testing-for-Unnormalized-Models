@@ -4,4 +4,3 @@ from .ksd import *
 from .mmd import *
 from .lrt import *
 from .hst import *
-from .permutation_test import *

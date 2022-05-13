@@ -1,5 +1,7 @@
 import argparse
+import datetime
 import os
+import time
 import torch
 import torch.backends.cudnn as cudnn
 import models
@@ -41,7 +43,7 @@ def runExperiment():
     metric = Metric(cfg['data_name'], {'test': ['Power']})
     logger = make_logger(os.path.join('output', 'runs', 'test_{}'.format(cfg['model_tag'])))
     test(data_loader['test'], gof, metric, logger)
-    result = {'cfg': cfg, 'logger': logger}
+    result = {'cfg': cfg, 'logger': logger, 'gof': gof}
     save(result, os.path.join('output', 'result', '{}.pt'.format(cfg['model_tag'])))
     return
 
@@ -80,17 +82,23 @@ def make_params(data_name):
 
 
 def test(data_loader, gof, metric, logger):
+    start_time = time.time()
     for i, input in enumerate(data_loader):
         logger.safe(True)
         input = collate(input)
         input = to_device(input, cfg['device'])
         output = gof.test(input)
+        gof.update(output)
         evaluation = metric.evaluate(metric.metric_name['test'], input, output)
         logger.append(evaluation, 'test', 1)
-        info = {'info': ['Model: {}'.format(cfg['model_tag']),
-                         'Test Iter: {}/{}'.format(i, len(data_loader))]}
-        logger.append(info, 'test', mean=False)
-        print(logger.write('test', metric.metric_name['test']))
+        if i % int((len(data_loader) * cfg['log_interval']) + 1) == 0:
+            batch_time = (time.time() - start_time) / (i + 1)
+            exp_finished_time = datetime.timedelta(seconds=round(batch_time * (len(data_loader) - i - 1)))
+            info = {'info': ['Model: {}'.format(cfg['model_tag']),
+                             'Test Iter: {}/{}({:.0f}%)'.format(i + 1, len(data_loader), 100. * i / len(data_loader)),
+                             'Experiment Finished Time: {}'.format(exp_finished_time)]}
+            logger.append(info, 'test', mean=False)
+            print(logger.write('test', metric.metric_name['test']))
         logger.safe(False)
     return
 

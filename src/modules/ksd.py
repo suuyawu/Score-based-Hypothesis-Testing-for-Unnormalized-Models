@@ -15,8 +15,8 @@ class KSD:
             for i in range(len(null_samples)):
                 bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], null_model.score)
                 statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model.score)
-                statistic.append(statistic_i.item())
-                pvalue.append(pvalue_i.item())
+                statistic.append(statistic_i)
+                pvalue.append(pvalue_i)
         return statistic, pvalue
 
     def multinomial_bootstrap(self, null_samples, null_score):
@@ -33,7 +33,8 @@ class KSD:
 
     def KSD_U_test(self, alter_samples, bootstrap_null_samples, null_score):
         _, test_statistic = self.KSD_statistics(alter_samples, null_score, V_stat=self.V_stat)
-        pvalue = (bootstrap_null_samples >= test_statistic).float().mean()
+        test_statistic = test_statistic.item()
+        pvalue = (bootstrap_null_samples >= test_statistic).float().mean().item()
         return test_statistic, pvalue
 
     def multinomial_weights(self, num_samples):
