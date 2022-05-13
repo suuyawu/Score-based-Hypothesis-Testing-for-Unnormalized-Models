@@ -33,11 +33,12 @@ class MVN(nn.Module):
 
     def hscore(self, x):
         invcov = torch.linalg.inv(self.logvar.exp())
-        t1 = 0.5 * torch.matmul(torch.matmul(torch.matmul((x - self.mean), invcov), invcov),
-                                (x - self.mean).transpose())
+        mean = self.mean.unsqueeze(0)
+        t1 = 0.5 * torch.matmul(torch.matmul(torch.matmul((x - mean), invcov), invcov),
+                                (x - mean).t())
         t2 = - invcov.diagonal().sum()
-        t1 = t1.diagonal().sum()
-        hs = t1 / x.shape[0] + t2
+        t1 = t1.diagonal()
+        hs = t1 + t2
         return hs
 
 def mvn(params):
