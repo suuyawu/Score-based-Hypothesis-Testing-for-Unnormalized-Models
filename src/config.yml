@@ -3,7 +3,7 @@
 control:
   data_name: MVN
   test_mode: cvm
-  ptb: 0.1-0.1
+  ptb: 0.1-0
   alter_num_samples: 100
   alter_noise: 0
 # experiment

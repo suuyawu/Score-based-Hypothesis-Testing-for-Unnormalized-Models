@@ -57,7 +57,7 @@ def make_params(data_name):
     elif data_name == 'GMM':
         mean = cfg['gmm']['mean']
         logvar = cfg['gmm']['logvar']
-        logweight = cfg['gmm']['logvar']
+        logweight = cfg['gmm']['logweight']
         ptb_mean, ptb_logvar, ptb_logweight = cfg['ptb'].split('-')
         ptb_mean, ptb_logvar, ptb_logweight = float(ptb_mean), float(ptb_logvar), float(ptb_logweight)
         params = {'num_trials': cfg['num_trials'], 'num_samples': cfg['num_samples'],
@@ -74,8 +74,8 @@ def make_params(data_name):
     else:
         raise ValueError('Not valid data name')
     footprint = make_footprint(params)
-    params = load(os.path.join('output', 'params', 'params.pkl'))
-    params = params[data_name][footprint]
+    params = load(os.path.join('output', 'params', '{}.pkl'.format(data_name)))
+    params = params[footprint]
     return params
 
 
@@ -84,8 +84,6 @@ def test(data_loader, gof, metric, logger):
         logger.safe(True)
         input = collate(input)
         input = to_device(input, cfg['device'])
-        print(input)
-        exit()
         output = gof.test(input)
         evaluation = metric.evaluate(metric.metric_name['test'], input, output)
         logger.append(evaluation, 'test', 1)

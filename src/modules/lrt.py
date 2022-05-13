@@ -33,6 +33,11 @@ class LRT:
         bootstrap_null_samples = torch.sum(bootstrap_null_items, dim=-1)
         return bootstrap_null_samples
 
+    def lrt(self, samples, null_pdf, alter_pdf):
+        """Calculate Likelihood Ratio"""
+        LRT_items = 2 * (torch.log(alter_pdf(samples)) - torch.log(null_pdf(samples)))
+        return LRT_items, torch.sum(LRT_items, -1)
+
     def density_test(self, alter_samples, bootstrap_null_samples, null_model, alter_model, bootstrap_approx):
         _, test_statistic = self.lrt(alter_samples, null_model.pdf, alter_model.pdf)
         if bootstrap_approx:
@@ -42,8 +47,3 @@ class LRT:
             df = 1
             pvalue = 1 - chi2(df).cdf(test_statistic)  # since Λ follows χ2
         return test_statistic, pvalue
-
-    def lrt(self, samples, null_pdf, alter_pdf):
-        """Calculate Likelihood Ratio"""
-        LRT_items = 2 * (torch.log(alter_pdf(samples)) - torch.log(null_pdf(samples)))
-        return LRT_items, torch.sum(LRT_items, -1)

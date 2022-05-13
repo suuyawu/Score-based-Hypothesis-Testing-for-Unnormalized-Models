@@ -61,6 +61,9 @@ class RBM(nn.Module):
             v = self.hidden_to_visible(h)
         return v
 
-def rbm(W, v, h):
+def rbm(params):
+    W = params['W']
+    v = params['v']
+    h = params['h']
     model = RBM(W, v, h)
     return model

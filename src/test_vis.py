@@ -58,17 +58,17 @@ if __name__ == "__main__":
         if data_name == 'MVN':
             mean = cfg['mvn']['mean']
             logvar = cfg['mvn']['logvar']
-            ptb_mean = 1
-            ptb_logvar = 0.1
+            ptb_mean = float(1)
+            ptb_logvar = float(0.1)
             params = {'num_trials': num_trials, 'num_samples': num_samples, 'mean': mean, 'logvar': logvar,
                       'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
         elif data_name == 'GMM':
             mean = cfg['gmm']['mean']
             logvar = cfg['gmm']['logvar']
             logweight = cfg['gmm']['logweight']
-            ptb_logweight = 0.
-            ptb_mean = 5.
-            ptb_logvar = 0.1
+            ptb_logweight = float(0)
+            ptb_mean = float(5)
+            ptb_logvar = float(0.1)
             params = {'num_trials': num_trials, 'num_samples': num_samples,
                       'mean': mean, 'logvar': logvar, 'logweight': logweight,
                       'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar, 'ptb_logweight': ptb_logweight}
@@ -80,8 +80,8 @@ if __name__ == "__main__":
             W = torch.randn(dim_v, dim_h, generator=generator)
             v = torch.randn(dim_v, generator=generator)
             h = torch.randn(dim_h, generator=generator)
-            ptb_W = 1.
-            num_iters = 2000
+            ptb_W = float(1)
+            num_iters = int(2000)
             params = {'num_trials': num_trials, 'num_samples': num_samples,
                       'W': W, 'v': v, 'h': h, 'ptb_W': ptb_W, 'num_iters': num_iters}
         else:
@@ -90,17 +90,15 @@ if __name__ == "__main__":
         data_loader = make_data_loader(dataset, 'gof')
         input = next(iter(data_loader['test']))
         input = collate(input)
-        if data_name == 'RBM':
-            null_model = models.RBM(input['null_param']['W'], input['null_param']['v'], input['null_param']['h'])
-            alter_model = models.RBM(input['alter_param']['W'], input['alter_param']['v'], input['alter_param']['h'])
-        elif data_name == 'MVN':
-            null_model = models.MVN(input['null_param']['mean'], input['null_param']['logvar'])
-            alter_model = models.MVN(input['alter_param']['mean'], input['alter_param']['logvar'])
+        if data_name == 'MVN':
+            null_model = models.mvn(input['null_param'])
+            alter_model = models.mvn(input['alter_param'])
         elif data_name == 'GMM':
-            null_model = models.GMM(input['null_param']['mean'], input['null_param']['logvar'],
-                                    input['null_param']['logweight'])
-            alter_model = models.GMM(input['alter_param']['mean'], input['alter_param']['logvar'],
-                                     input['alter_param']['logweight'])
+            null_model = models.gmm(input['null_param'])
+            alter_model = models.gmm(input['alter_param'])
+        elif data_name == 'RBM':
+            null_model = models.rbm(input['null_param'])
+            alter_model = models.rbm(input['alter_param'])
         else:
             raise ValueError('Not valid data name')
-        vis(null_model, alter_model, input['null'][0], input['alter'][0], data_name)
+        vis(null_model, alter_model, input['null'], input['alter'], data_name)

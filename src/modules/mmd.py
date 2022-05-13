@@ -7,8 +7,7 @@ class MMD:
         super().__init__()
         self.num_bootstrap = 1000
 
-    def test(self, null_samples, alter_samples, null_model):
-        # bootstrap_null_samples = self.MMD_bootstrap(null_samples, alter_samples[0], self.num_bootstrap)
+    def test(self, null_samples, alter_samples):
         bootstrap_null_samples = self.MMD_bootstrap(null_samples, alter_samples, self.num_bootstrap)
         statistic = []
         pvalue = []

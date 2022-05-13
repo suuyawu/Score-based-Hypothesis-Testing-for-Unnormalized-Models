@@ -24,7 +24,6 @@ class MVN(Dataset):
             self.process()
         self.null, self.alter, self.meta = load(os.path.join(os.path.join(self.processed_folder, split_name)),
                                                 mode='pickle')
-
     def __getitem__(self, index):
         null, alter = torch.tensor(self.null[index]), torch.tensor(self.alter[index])
         null_param = {'mean': self.mean, 'logvar': self.logvar}
@@ -63,15 +62,21 @@ class MVN(Dataset):
 
     def make_data(self):
         total_samples = self.num_trials * self.num_samples
-        d = self.mean.size(0)
-        null_mvn = torch.distributions.multivariate_normal.MultivariateNormal(self.mean, self.logvar.exp())
+        d = self.mean.size(-1)
+        if d == 1:
+            null_mvn = torch.distributions.normal.Normal(self.mean, self.logvar.exp())
+        else:
+            null_mvn = torch.distributions.multivariate_normal.MultivariateNormal(self.mean, self.logvar.exp())
         null = null_mvn.sample((total_samples,))
         null = null.view(self.num_trials, self.num_samples, -1)
         ptb_mean = self.ptb_mean * torch.randn((self.num_trials, *self.mean.size()))
         alter_mean = self.mean + ptb_mean
         ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials, d)))
         alter_logvar = self.logvar + ptb_logvar
-        alter_normal = torch.distributions.multivariate_normal.MultivariateNormal(alter_mean, self.logvar.exp())
+        if d == 1:
+            alter_normal = torch.distributions.normal.Normal(alter_mean, self.logvar.exp())
+        else:
+            alter_normal = torch.distributions.multivariate_normal.MultivariateNormal(alter_mean, self.logvar.exp())
         alter = alter_normal.sample((self.num_samples,))
         alter = alter.permute(1, 0, 2)
         null, alter = null.numpy(), alter.numpy()

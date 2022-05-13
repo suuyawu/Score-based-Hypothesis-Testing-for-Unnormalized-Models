@@ -66,13 +66,15 @@ class RBM(Dataset):
     def make_data(self):
         with torch.no_grad():
             d = self.v.size(0)
-            null_rbm = models.rbm(self.W, self.v, self.h).to(cfg['device'])
+            params = {'W': self.W, 'v': self.v, 'h': self.h}
+            null_rbm = models.rbm(params).to(cfg['device'])
             null, alter = [], []
             alter_W = []
             for i in range(self.num_trials):
                 ptb_W = self.ptb_W * torch.randn(self.W.size())
                 alter_W_i = self.W + ptb_W
-                alter_rbm = models.rbm(alter_W_i, self.v, self.h).to(cfg['device'])
+                params_i = {'W': alter_W_i, 'v': self.v, 'h': self.h}
+                alter_rbm = models.rbm(params_i).to(cfg['device'])
                 v = torch.randn(self.num_samples, d, device=cfg['device'])
                 null_i = null_rbm(v, self.num_iters)
                 alter_i = alter_rbm(v, self.num_iters)

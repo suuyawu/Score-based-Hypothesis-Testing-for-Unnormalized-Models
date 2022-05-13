@@ -109,18 +109,23 @@ def recur(fn, input, *args):
 
 def process_control():
     cfg['data_name'] = cfg['control']['data_name']
+    cfg['model_name'] = cfg['data_name'].lower()
     cfg['test_mode'] = cfg['control']['test_mode']
     cfg['ptb'] = cfg['control']['ptb']
     cfg['alter_num_samples'] = int(cfg['control']['alter_num_samples'])
     cfg['alter_noise'] = float(cfg['control']['alter_noise'])
     cfg['num_trials'] = 1000
-    cfg['num_samples'] = 1000
+    cfg['num_samples'] = 500
     cfg['gof'] = {}
-    cfg['gof']['batch_size'] = {'test': 500}
+    cfg['gof']['batch_size'] = {'test': 1}
     cfg['gof']['shuffle'] = {'test': False}
-    cfg['mvn'] = {'mean': torch.tensor([0., 5.]), 'logvar': torch.tensor([[1., 0.1], [0.1, 1.]])}
-    cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [5., 0.], [2., 5.]]),
-                  'logvar': torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]]),
+    # cfg['mvn'] = {'mean': torch.tensor([0., 5.]), 'logvar': torch.tensor([[1., 0.1], [0.1, 1.]])}
+    cfg['mvn'] = {'mean': torch.tensor([0.]), 'logvar': torch.tensor([1.])}
+    # cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [5., 0.], [2., 5.]]),
+    #               'logvar': torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]]),
+    #               'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2]))}
+    cfg['gmm'] = {'mean': torch.tensor([[0.], [5.], [2.]]),
+                  'logvar': torch.tensor([[1.], [0.2], [0.8]]),
                   'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2]))}
     dim_v = 50
     dim_h = 40
@@ -129,7 +134,7 @@ def process_control():
     W = torch.randn(dim_v, dim_h, generator=generator)
     v = torch.randn(dim_v, generator=generator)
     h = torch.randn(dim_h, generator=generator)
-    cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': 100}
+    cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(100)}
     return
 
 
@@ -228,7 +233,7 @@ def collate(input):
         if k in ['null_param', 'alter_param']:
             input[k] = input[k][0]
         else:
-            input[k] = torch.stack(input[k], 0)
+            input[k] = torch.cat(input[k], 0)
     return input
 
 

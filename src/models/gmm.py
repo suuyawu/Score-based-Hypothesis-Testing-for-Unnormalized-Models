@@ -1,9 +1,12 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from config import cfg
+from torch.distributions.normal import Normal
 from torch.distributions.multivariate_normal import MultivariateNormal
 from scipy import stats
+
 
 class GMM(nn.Module):
     def __init__(self, mean, logvar, logweight):
@@ -11,8 +14,13 @@ class GMM(nn.Module):
         self.mean = nn.Parameter(mean)
         self.logvar = nn.Parameter(logvar)
         self.logweight = nn.Parameter(logweight)
-        self.model = [MultivariateNormal(_mean, _logvar.exp().sqrt())
-                      for (_mean, _logvar) in zip(mean, logvar)]
+        self.d = self.mean.size(-1)
+        if self.d == 1:
+            self.model = [Normal(_mean, _logvar.exp().sqrt())
+                          for (_mean, _logvar) in zip(mean, logvar)]
+        else:
+            self.model = [MultivariateNormal(_mean, _logvar.exp().sqrt())
+                          for (_mean, _logvar) in zip(mean, logvar)]
 
     def pdf(self, x, item=False):
         _probs = [w * m.log_prob(x).exp()
@@ -25,22 +33,28 @@ class GMM(nn.Module):
             return sum(_probs)
 
     def cdf(self, x):
+        if type(x) is np.ndarray:
+            x = torch.from_numpy(x).to(self.mean.device)
         _cums = [w * m.cdf(x)
                  for (w, m) in zip(self.logweight.exp(), self.model)]
         # sum (_cums) in shape (N, )
         return sum(_cums)
 
     def cdf_numpy(self, x):
-        # numpy computation for ks test and cramer-von mises tests
-        mcdf = 0.0
-        mean_double_numpy = self.mean.type(torch.float64).cpu().numpy()
-        logvar_double_numpy = self.logvar.type(torch.float64).cpu().numpy()
-        logweight_double_numpy = self.logweight.type(torch.float64).cpu().numpy()
+        return self.cdf(x).cpu().numpy()
 
-        for i in range(len(logweight_double_numpy)):
-            mcdf += logweight_double_numpy.exp()[i] * stats.multivariate_normal.cdf(x, loc=mean_double_numpy[i],
-                                                                  scale=np.sqrt(np.exp(logvar_double_numpy[i])))
-        return mcdf
+    # def cdf_numpy(self, x):
+    #     # numpy computation for ks test and cramer-von mises tests
+    #     mcdf = 0.0
+    #     mean_double_numpy = self.mean.type(torch.float64).cpu().numpy()
+    #     logvar_double_numpy = self.logvar.type(torch.float64).cpu().numpy()
+    #     logweight_double_numpy = self.logweight.type(torch.float64).cpu().numpy()
+    #
+    #     for i in range(len(logweight_double_numpy)):
+    #         mcdf += logweight_double_numpy.exp()[i] * stats.multivariate_normal.cdf(x, loc=mean_double_numpy[i],
+    #                                                                                 scale=np.sqrt(
+    #                                                                                     np.exp(logvar_double_numpy[i])))
+    #     return mcdf
 
     def score(self, x):
         _probs, mpdf = self.pdf(x, item=True)
@@ -58,6 +72,10 @@ class GMM(nn.Module):
         hscore = -0.5 * (dlnpdf ** 2) + ddpdf / mpdf
         return hscore
 
-def gmm(mean, logvar, logweight):
+
+def gmm(params):
+    mean = params['mean']
+    logvar = params['logvar']
+    logweight = params['logweight']
     model = GMM(mean, logvar, logweight)
     return model

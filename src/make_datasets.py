@@ -21,11 +21,10 @@ if __name__ == "__main__":
     num_samples = cfg['num_samples']
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
-    # data_names = ['MVN', 'GMM', 'RBM']
-    data_names = ['MVN']
+    data_names = ['MVN', 'GMM', 'RBM']
     params = {k: {} for k in data_names}
-    for i in range(len(data_names)):
-        data_name = data_names[i]
+    for m in range(len(data_names)):
+        data_name = data_names[m]
         if data_name == 'MVN':
             mean = cfg['mvn']['mean']
             logvar = cfg['mvn']['logvar']
@@ -48,11 +47,13 @@ if __name__ == "__main__":
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 params[data_name][footprint] = params_i
+            save(params[data_name], os.path.join('output', 'params', '{}.pkl'.format(data_name)))
         elif data_name == 'GMM':
             mean = cfg['gmm']['mean']
             logvar = cfg['gmm']['logvar']
             logweight = cfg['gmm']['logweight']
-            ptb_mean = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.7, 1, 1.5, 2, 2.5, 3]
+            # ptb_mean = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.7, 1, 1.5, 2, 2.5, 3]
+            ptb_mean = [0, 0.1]
             for i in range(len(ptb_mean)):
                 ptb_mean_i = float(ptb_mean[i])
                 ptb_logvar = float(0)
@@ -85,19 +86,21 @@ if __name__ == "__main__":
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 params[data_name][footprint] = params_i
+            save(params[data_name], os.path.join('output', 'params', '{}.pkl'.format(data_name)))
         elif data_name == 'RBM':
             W = cfg['rbm']['W']
             v = cfg['rbm']['v']
             h = cfg['rbm']['h']
             num_iters = cfg['rbm']['num_iters']
-            ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.016, 0.018, 0.02, 0.025, 0.03, 0.035]
+            # ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.016, 0.018, 0.02, 0.025, 0.03, 0.035]
+            ptb_W = [0, 0.005]
             for i in range(len(ptb_W)):
                 ptb_W_i = float(ptb_W[i])
                 params_i = {'num_trials': num_trials, 'num_samples': num_samples, 'W': W, 'v': v, 'h': h,
                             'num_iters': num_iters, 'ptb_W': ptb_W_i}
-                dataset = fetch_dataset(data_names[i], params_i)
+                dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 params[data_name][footprint] = params_i
+            save(params[data_name], os.path.join('output', 'params', '{}.pkl'.format(data_name)))
         else:
             raise ValueError('Not valid data name')
-    save(params, os.path.join('output', 'params', 'params.pkl'))

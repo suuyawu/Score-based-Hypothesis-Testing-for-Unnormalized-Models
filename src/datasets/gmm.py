@@ -67,7 +67,10 @@ class GMM(Dataset):
         total_samples = self.num_trials * self.num_samples
         d = self.mean.size(-1)
         k = self.logweight.size(0)
-        null_normal = torch.distributions.multivariate_normal.MultivariateNormal(self.mean, self.logvar.exp())
+        if d == 1:
+            null_normal = torch.distributions.normal.Normal(self.mean, self.logvar.exp())
+        else:
+            null_normal = torch.distributions.multivariate_normal.MultivariateNormal(self.mean, self.logvar.exp())
         null = null_normal.sample((total_samples,))
         null_mixture_idx = torch.multinomial(self.logweight.softmax(dim=-1),
                                              num_samples=self.num_trials * self.num_samples,
@@ -75,14 +78,22 @@ class GMM(Dataset):
         null_mixture_idx = null_mixture_idx.view(null_mixture_idx.size(0), 1, 1).repeat(1, 1, d)
         null = torch.gather(null, 1, index=null_mixture_idx)
         null = null.squeeze(1).view(self.num_trials, self.num_samples, -1)
-        alter_logweight = self.logweight + self.ptb_logweight * torch.randn((self.num_trials, *self.logweight.size()))
         ptb_mean = self.ptb_mean * torch.randn((self.num_trials, *self.mean.size()))
         alter_mean = self.mean + ptb_mean
-        ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials * k, d))).view(
-            self.num_trials, k, d, d)
+        if d == 1:
+            ptb_logvar = self.ptb_logvar * torch.randn((self.num_trials, *self.logvar.size()))
+        else:
+            ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials * k, d))).view(
+                self.num_trials, k, d, d)
         alter_logvar = self.logvar + ptb_logvar
-        alter_normal = torch.distributions.multivariate_normal.MultivariateNormal(alter_mean, alter_logvar.exp())
+        ptb_logweight = self.ptb_logweight * torch.randn((self.num_trials, *self.logweight.size()))
+        alter_logweight = self.logweight + ptb_logweight
+        if d == 1:
+            alter_normal = torch.distributions.normal.Normal(alter_mean, alter_logvar.exp())
+        else:
+            alter_normal = torch.distributions.multivariate_normal.MultivariateNormal(alter_mean, alter_logvar.exp())
         alter = alter_normal.sample((self.num_samples,))
+
         alter = alter.permute(1, 0, 2, 3)
         alter_mixture_idx = torch.multinomial(alter_logweight.softmax(dim=-1),
                                               num_samples=self.num_samples,

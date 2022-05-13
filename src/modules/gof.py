@@ -29,9 +29,21 @@ class GoodnessOfFit:
         return ht
 
     def test(self, input):
-
-
-
+        alter_noise = cfg['alter_noise']
+        alter_num_samples = cfg['alter_num_samples']
         null, alter, null_param, alter_param = input['null'], input['alter'], input['null_param'], input['alter_param']
-        result = self.gof.test(input)
-        return result
+        print(null.size(), alter.size())
+        alter = alter + alter_noise * torch.randn(alter.size(), device=alter.device)
+        null_samples = torch.stack(torch.split(null, alter_num_samples, dim=0), dim=0)
+        alter_samples = torch.stack(torch.split(alter, alter_num_samples, dim=0), dim=0)
+        if self.test_mode in ['cvm', 'ks']:
+            # alter_samples = alter_samples.cpu().numpy()
+            alter_samples = alter_samples.cpu().numpy()
+            null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
+            statistic, pvalue = self.gof.test(alter_samples, null_model)
+        else:
+            raise ValueError('Not valid test mode')
+        print(statistic)
+        print(pvalue)
+        exit()
+        return statistic, pvalue

@@ -9,32 +9,28 @@ class KSD:
         self.V_stat = False
 
     def test(self, null_samples, alter_samples, null_model):
-        bootstrap_null_samples = self.multinomial_bootstrap(self.num_bootstrap, null_samples, null_model.score,
-                                                            self.V_stat)
         statistic = []
         pvalue = []
         for i in range(len(alter_samples)):
+            # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, null_model.score)
             statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model.score)
             statistic.append(statistic_i)
             pvalue.append(pvalue_i)
         return statistic, pvalue
 
-    def multinomial_bootstrap(self, test_name, num_bootstrap, null_samples, null_score, V_stat=False):
+    def multinomial_bootstrap(self, null_samples, null_score):
         """Bootstrap algorithm for U-statistics by Huskova & Janssen (1993)"""
         num_samples = null_samples.size(0)
-        null_items, _ = self.KSD_statistics(null_samples, null_score, V_stat=V_stat)
+        null_items, _ = self.KSD_statistics(null_samples, null_score, V_stat=self.V_stat)
         weights_exp1, weights_exp2 = self.multinomial_weights(num_samples)
         null_items = torch.unsqueeze(null_items, dim=0)  # 1 x N x N
         bootstrap_null_samples = (weights_exp1 - 1. / num_samples) * null_items * (
                 weights_exp2 - 1. / num_samples)  # m x N x N
-        if test_name == 'KSD-U':
-            bootstrap_null_samples = torch.sum(torch.sum(bootstrap_null_samples, dim=-1), dim=-1)
-        if test_name == 'KSD-V':
-            bootstrap_null_samples = torch.sum(torch.sum(bootstrap_null_samples, dim=-1), dim=-1)
+        bootstrap_null_samples = torch.sum(torch.sum(bootstrap_null_samples, dim=-1), dim=-1)
         return bootstrap_null_samples
 
     def KSD_U_test(self, alter_samples, bootstrap_null_samples, null_score):
-        _, test_statistic = self.KSD_statistics(alter_samples, null_score, V_stat=False)
+        _, test_statistic = self.KSD_statistics(alter_samples, null_score, V_stat=self.V_stat)
         pvalue = (bootstrap_null_samples >= test_statistic).float().mean()
         return test_statistic, pvalue
 
