@@ -12,78 +12,106 @@ class MMD:
             statistic = []
             pvalue = []
             for i in range(len(null_samples)):
-                bootstrap_null_samples = self.MMD_bootstrap(null_samples[i], alter_samples[i])
-                statistic_i, pvalue_i = self.MMD_test(null_samples[i], alter_samples[i], bootstrap_null_samples)
+                kernel_hyper = self.make_kernel_hyper(null_samples[i], alter_samples[i])
+                statistic_i, bootstrap_null_samples = self.MMD_bootstrap(null_samples[i], alter_samples[i],
+                                                                         kernel_hyper)
+                pvalue_i = self.MMD_test(statistic_i, bootstrap_null_samples)
                 statistic.append(statistic_i)
                 pvalue.append(pvalue_i)
         return statistic, pvalue
 
-    def MMD_bootstrap(self, null_samples, alter_samples):
-        n1 = null_samples.shape[0]
-        n2 = alter_samples.shape[0]
-        _, K = self.MMD_statistic(null_samples, alter_samples, ret_matrix=True)
-        bootstrap_null_samples = torch.zeros(self.num_bootstrap, device=K.device)
-        for i in range(self.num_bootstrap):
-            idx = torch.randperm(n1 + n2)
-            K_i = K[idx, idx[:, None]]
-            bootstrap_null_samples[i] = self.MMD2u(K_i, n1, n2)
-        return bootstrap_null_samples
+    def make_kernel_hyper(self, null_samples, alter_samples):
+        all_samples = torch.cat((null_samples, alter_samples), dim=0)
+        median_dist = self.median_heruistic(all_samples, all_samples.clone())
+        bandwidth = 2 * torch.pow(0.5 * median_dist, 0.5)
+        kernel_hyper = {'bandwidth': bandwidth}
+        return kernel_hyper
 
-    def MMD_test(self, null_samples, alter_samples, bootstrap_null_samples):
-        n1 = null_samples.shape[0]
-        n2 = alter_samples.shape[0]
-        test_statistic = self.MMD_statistic(null_samples, alter_samples).item()
-        pvalue = torch.mean((bootstrap_null_samples > test_statistic).float()).item()
-        return test_statistic, pvalue
+    def median_heruistic(self, sample1, sample2):
+        with torch.no_grad():
+            G = torch.sum(sample1 * sample1, dim=-1)  # N or * x N
+            G_exp = torch.unsqueeze(G, dim=-2)  # 1 x N or * x1 x N
+            H = torch.sum(sample2 * sample2, dim=-1)
+            H_exp = torch.unsqueeze(H, dim=-1)  # N x 1 or * * x N x 1
+            dist = G_exp + H_exp - 2 * sample2.matmul(torch.transpose(sample1, -1, -2))  # N x N or  * x N x N
+            if len(dist.shape) == 3:
+                dist = dist[torch.triu(torch.ones(dist.shape)) == 1].view(dist.shape[0], -1)  # * x (NN)
+                median_dist, _ = torch.median(dist, dim=-1)  # *
+            else:
+                dist = (dist - torch.tril(dist)).view(-1)
+                median_dist = torch.median(dist[dist > 0.])
+        return median_dist.clone().detach()
 
-    def MMD_statistic(self, samples1, samples2, ret_matrix=False):
-        """compute mmd with rbf kernel"""
-        n_1 = samples1.shape[0]
-        n_2 = samples2.shape[0]
-        a00 = 1. / (n_1 * (n_1 - 1.))
-        a11 = 1. / (n_2 * (n_2 - 1.))
-        a01 = - 1. / (n_1 * n_2)
+    def MMD_bootstrap(self, null_samples, alter_samples, kernel_hyper, split=1):
+        num_samples = null_samples.shape[0]
+        weights = np.random.multinomial(num_samples, np.ones(num_samples) / num_samples, size=self.num_bootstrap)
+        weights = weights / num_samples
+        weights = torch.from_numpy(weights).type(alter_samples.type())
+        MMD, MMD_comp = self.MMD_statistic(null_samples, alter_samples, self.SE_kernel_multi, kernel_hyper, flag_U=True,
+                                           flag_simple_U=True)
+        MMD = MMD.item()
+        # Now compute bootstrap samples
+        with torch.no_grad():
+            MMD_comp = torch.unsqueeze(MMD_comp, dim=0)  # 1 x N x N
+            weights_exp = torch.unsqueeze(weights, dim=-1)  # m x N x 1
+            weights_exp2 = torch.unsqueeze(weights, dim=1)  # m x 1 x n
+            bootstrap_samples = (weights_exp - 1. / num_samples) * MMD_comp * (
+                    weights_exp2 - 1. / num_samples)  # m x N x N
+            bootstrap_samples = torch.sum(torch.sum(bootstrap_samples, dim=-1), dim=-1)
+        return MMD, bootstrap_samples
 
-        sample_12 = torch.cat((samples1, samples2), 0)
-        distances = self.l2norm_dist(sample_12, sample_12)
+    def SE_kernel_multi(self, sample1, sample2, **kwargs):
+        '''
+        Compute the multidim square exponential kernel
+        :param sample1: x : N x N x dim
+        :param sample2: y : N x N x dim
+        :param kwargs: kernel hyper-parameter:bandwidth
+        :return:
+        '''
+        bandwidth = kwargs['kernel_hyper']['bandwidth']
+        if len(sample1.shape) == 4:  # * x N x d
+            bandwidth = bandwidth.unsqueeze(-1).unsqueeze(-1)
+        sample_diff = sample1 - sample2  # N x N x dim
+        norm_sample = torch.norm(sample_diff, dim=-1) ** 2  # N x N or * x N x N
+        K = torch.exp(-norm_sample / (bandwidth ** 2 + 1e-9))
+        return K
 
-        dist = torch.triu(distances).view(-1)
-        gamma = 1 / torch.median(dist[dist > 0.]) ** 2
-
-        kernels = torch.exp(- gamma * distances ** 2)
-        k_1 = kernels[:n_1, :n_1]
-        k_2 = kernels[n_1:, n_1:]
-        k_12 = kernels[:n_1, n_1:]
-
-        mmd = (2 * a01 * k_12.sum() +
-               a00 * (k_1.sum() - torch.trace(k_1)) +
-               a11 * (k_2.sum() - torch.trace(k_2)))
-        if ret_matrix:
-            return mmd, kernels
+    def MMD_statistic(self, samples1, samples2, kernel, kernel_hyper, flag_U=True, flag_simple_U=True):
+        # samples1: N x dim
+        # samples2: N x dim
+        n = samples1.shape[0]
+        m = samples2.shape[0]
+        if m != n and flag_simple_U:
+            raise ValueError('If m is not equal to n, flag_simple_U must be False')
+        samples1_exp1 = torch.unsqueeze(samples1, dim=1)  # N x 1 x dim
+        samples1_exp2 = torch.unsqueeze(samples1, dim=0)  # 1 x N x dim
+        samples2_exp1 = torch.unsqueeze(samples2, dim=1)  # N x 1 x dim
+        samples2_exp2 = torch.unsqueeze(samples2, dim=0)  # 1 x N x dim
+        # Term1
+        K1 = kernel(samples1_exp1, samples1_exp2, kernel_hyper=kernel_hyper)  # N x N
+        if flag_U:
+            K1 = K1 - torch.diag(torch.diag(K1))
+        # Term3
+        K3 = kernel(samples2_exp1, samples2_exp2, kernel_hyper=kernel_hyper)  # N x N
+        if flag_U:
+            K3 = K3 - torch.diag(torch.diag(K3))
+        # Term2
+        if flag_simple_U:
+            K2_comp = kernel(samples1_exp1, samples2_exp2, kernel_hyper=kernel_hyper)
+            K2_comp = K2_comp - torch.diag(torch.diag(K2_comp))
+            K2 = K2_comp + K2_comp.t()
         else:
-            return mmd
+            K2 = 2 * kernel(samples1_exp1, samples2_exp2, kernel_hyper=kernel_hyper)  # N x N
+        if flag_U:
+            if flag_simple_U:
+                MMD = torch.sum(K1) / (n * (n - 1)) + torch.sum(K3) / (m * (m - 1)) - 1. / (m * (m - 1)) * torch.sum(K2)
 
-    def l2norm_dist(self, sample_1, sample_2):
-        """Compute the matrix of all squared pairwise distances.
-        Args:
-            sample_1 (Tensor in shape (n_1, d)): The first sample
-            sample_2 (Tensor in shape (n_2, d)): The second sample
-        Returns
-            Tensor in shape (n_1, n_2): The [i, j]-th entry is equal to ``|| sample_1[i, :] - sample_2[j, :] ||_p``.
-        """
-        n_1, n_2 = sample_1.size(0), sample_2.size(0)
-        norms_1 = torch.sum(sample_1 ** 2, dim=1, keepdim=True)
-        norms_2 = torch.sum(sample_2 ** 2, dim=1, keepdim=True)
-        norms = (norms_1.expand(n_1, n_2) +
-                 norms_2.transpose(0, 1).expand(n_1, n_2))
-        distances_squared = norms - 2 * sample_1.mm(sample_2.t())
-        return torch.sqrt(1e-5 + torch.abs(distances_squared))
+            else:
+                MMD = torch.sum(K1) / (n * (n - 1)) + torch.sum(K3) / (m * (m - 1)) - 1. / (m * n) * torch.sum(K2)
+        else:
+            MMD = torch.sum(K1 + K3 - K2) / (m * n)
+        return MMD, K1 + K3 - K2
 
-    def MMD2u(self, K, m, n):
-        """The MMD^2_u unbiased statistic."""
-        Kx = K[:m, :m]
-        Ky = K[m:, m:]
-        Kxy = K[:m, m:]
-        return 1.0 / (m * (m - 1.0)) * (Kx.sum() - Kx.diagonal().sum()) + \
-               1.0 / (n * (n - 1.0)) * (Ky.sum() - Ky.diagonal().sum()) - \
-               2.0 / (m * n) * Kxy.sum()
+    def MMD_test(self, test_statistic, bootstrap_null_samples):
+        pvalue = torch.mean((bootstrap_null_samples > test_statistic).float()).item()
+        return pvalue
