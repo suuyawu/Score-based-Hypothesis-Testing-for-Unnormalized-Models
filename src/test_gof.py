@@ -8,7 +8,7 @@ from data import fetch_dataset, make_data_loader
 from metrics import Metric
 from utils import save, load, to_device, process_control, resume, collate
 from logger import make_logger
-from modules import HypothesisTest
+from modules import GoodnessOfFit
 
 cudnn.benchmark = True
 parser = argparse.ArgumentParser(description='cfg')
@@ -37,10 +37,10 @@ def runExperiment():
     null_params = make_null_params(cfg['data_name'], cfg['ptb'])
     dataset = fetch_dataset(cfg['data_name'], null_params)
     data_loader = make_data_loader(dataset, 'ht')
-    ht = HypothesisTest(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
+    gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
     metric = Metric(cfg['data_name'], {'test': ['Power']})
     logger = make_logger(os.path.join('output', 'runs', 'test_{}'.format(cfg['model_tag'])))
-    test(data_loader['test'], ht, metric, logger)
+    test(data_loader['test'], gof, metric, logger)
     result = {'cfg': cfg, 'logger': logger}
     save(result, os.path.join('output', 'result', '{}.pt'.format(cfg['model_tag'])))
     return
@@ -52,12 +52,12 @@ def make_null_params(data_name, ptb):
     return null_params
 
 
-def test(data_loader, ht, metric, logger):
+def test(data_loader, gof, metric, logger):
     for i, input in enumerate(data_loader):
         logger.safe(True)
         input = collate(input)
         input = to_device(input, cfg['device'])
-        output = ht.test(input)
+        output = gof.test(input)
         evaluation = metric.evaluate(metric.metric_name['test'], input, output)
         logger.append(evaluation, 'test', 1)
         info = {'info': ['Model: {}'.format(cfg['model_tag']),

@@ -18,9 +18,9 @@ num_trials = 1000
 num_samples = 500
 
 if __name__ == "__main__":
-    seed = 1
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    cfg['seed'] = 0
+    torch.manual_seed(cfg['seed'])
+    torch.cuda.manual_seed(cfg['seed'])
     data_names = ['MVN', 'GMM', 'RBM']
     null_params = {}
     for i in range(len(data_names)):
@@ -34,8 +34,8 @@ if __name__ == "__main__":
                                       'mean': mean, 'logvar': logvar,
                                       'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
         elif data_name == 'GMM':
-            logweight = torch.log(torch.tensor([0.2, 0.7, 0.1]))
-            mean = torch.tensor([[0., 0.], [5., 0.], [1., 2.]])
+            logweight = torch.log(torch.tensor([0.2, 0.6, 0.2]))
+            mean = torch.tensor([[0., 0.], [5., 0.], [2., 5.]])
             logvar = torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]])
             ptb_logweight = 0.
             ptb_mean = 0.1
@@ -46,9 +46,11 @@ if __name__ == "__main__":
         elif data_name == 'RBM':
             dim_v = 50
             dim_h = 40
-            W = torch.randn(dim_v, dim_h)
-            v = torch.randn(dim_v)
-            h = torch.randn(dim_h)
+            generator = torch.Generator()
+            generator.manual_seed(cfg['seed'])
+            W = torch.randn(dim_v, dim_h, generator=generator)
+            v = torch.randn(dim_v, generator=generator)
+            h = torch.randn(dim_h, generator=generator)
             ptb_W = 0.1
             num_iters = 200
             null_params[data_name] = {'num_trials': num_trials, 'num_samples': num_samples,

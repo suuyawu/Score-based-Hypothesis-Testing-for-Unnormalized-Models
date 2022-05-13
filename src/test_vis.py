@@ -23,31 +23,33 @@ vis_path = os.path.join('output', 'vis')
 
 
 def vis(null_model, alter_model, null, alter, data_name):
-    null_x, alter_x = null[:, 0], alter[:, 0]
-    null_y, alter_y = null[:, 1], alter[:, 1]
-    x_axis, y_axis = np.mgrid[-10:10:.1, -10:10:.1]
-    pos = torch.from_numpy(np.dstack((x_axis, y_axis))).type(torch.float32)
-    null_z = null_model.pdf(pos).detach().log2()
-    alter_z = alter_model.pdf(pos).detach().log2()
-    fig = plt.figure()
-    ax_1 = fig.add_subplot(121)
-    ax_1.contourf(x_axis, y_axis, null_z)
-    ax_1.scatter(null_x, null_y, s=1, color='r')
-    ax_2 = fig.add_subplot(122)
-    ax_2.contourf(x_axis, y_axis, alter_z)
-    ax_2.scatter(alter_x, alter_y, s=1, color='blue')
-    fig.tight_layout()
-    dir_path = os.path.join(vis_path, 'test')
-    fig_path = os.path.join(dir_path, '{}.png'.format(data_name))
-    makedir_exist_ok(dir_path)
-    plt.savefig(fig_path, dpi=500, bbox_inches='tight', pad_inches=0)
-    plt.close()
+    with torch.no_grad():
+        null_x, alter_x = null[:, 0], alter[:, 0]
+        null_y, alter_y = null[:, 1], alter[:, 1]
+        range = 40
+        x_axis, y_axis = np.mgrid[-range:range:.1, -range:range:.1]
+        pos = torch.from_numpy(np.dstack((x_axis, y_axis)).astype(np.float32))
+        null_z = null_model.pdf(pos).detach().log2()
+        alter_z = alter_model.pdf(pos).detach().log2()
+        fig = plt.figure(figsize=(10, 6))
+        ax_1 = fig.add_subplot(121)
+        ax_1.contourf(x_axis, y_axis, null_z)
+        ax_1.scatter(null_x, null_y, s=1, color='r')
+        ax_2 = fig.add_subplot(122)
+        ax_2.contourf(x_axis, y_axis, alter_z)
+        ax_2.scatter(alter_x, alter_y, s=1, color='blue')
+        fig.tight_layout()
+        dir_path = os.path.join(vis_path, 'test')
+        fig_path = os.path.join(dir_path, '{}.png'.format(data_name))
+        makedir_exist_ok(dir_path)
+        plt.savefig(fig_path, dpi=500, bbox_inches='tight', pad_inches=0)
+        plt.close()
     return
 
 
 if __name__ == "__main__":
     process_control()
-    cfg['seed'] = 3
+    cfg['seed'] = 0
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
     data_names = ['MVN', 'GMM', 'RBM']
@@ -62,8 +64,8 @@ if __name__ == "__main__":
                       'mean': mean, 'logvar': logvar,
                       'ptb_mean': ptb_mean, 'ptb_logvar': ptb_logvar}
         elif data_name == 'GMM':
-            logweight = torch.log(torch.tensor([0.2, 0.7, 0.1]))
-            mean = torch.tensor([[0., 0.], [5., 0.], [1., 2.]])
+            logweight = torch.log(torch.tensor([0.2, 0.6, 0.2]))
+            mean = torch.tensor([[0., 0.], [5., 0.], [2., 5.]])
             logvar = torch.tensor([[[1., 0.1], [0.1, 1.]], [[0.5, 0.1], [0.1, 0.5]], [[0.8, 0.1], [0.1, 0.8]]])
             ptb_logweight = 0.
             ptb_mean = 5.
@@ -74,9 +76,11 @@ if __name__ == "__main__":
         elif data_name == 'RBM':
             dim_v = 2
             dim_h = 10
-            W = torch.randn(dim_v, dim_h)
-            v = torch.randn(dim_v)
-            h = torch.randn(dim_h)
+            generator = torch.Generator()
+            generator.manual_seed(cfg['seed'])
+            W = torch.randn(dim_v, dim_h, generator=generator)
+            v = torch.randn(dim_v, generator=generator)
+            h = torch.randn(dim_h, generator=generator)
             ptb_W = 1.
             num_iters = 2000
             params = {'num_trials': num_trials, 'num_samples': num_samples,
@@ -90,10 +94,14 @@ if __name__ == "__main__":
         if data_name == 'RBM':
             null_model = models.RBM(input['null_param']['W'], input['null_param']['v'], input['null_param']['h'])
             alter_model = models.RBM(input['alter_param']['W'], input['alter_param']['v'], input['alter_param']['h'])
-        if data_name == 'MVN':
+        elif data_name == 'MVN':
             null_model = models.MVN(input['null_param']['mean'], input['null_param']['logvar'])
             alter_model = models.MVN(input['alter_param']['mean'], input['alter_param']['logvar'])
-        if data_name == 'GMM':
-            null_model = models.GMM(input['null_param']['mean'], input['null_param']['logvar'], input['null_param']['logweight'])
-            alter_model = models.GMM(input['alter_param']['mean'], input['alter_param']['logvar'], input['alter_param']['logweight'])
-        vis(null_model, alter_model, input['null'][0].numpy(), input['alter'][0].numpy(), data_name)
+        elif data_name == 'GMM':
+            null_model = models.GMM(input['null_param']['mean'], input['null_param']['logvar'],
+                                    input['null_param']['logweight'])
+            alter_model = models.GMM(input['alter_param']['mean'], input['alter_param']['logvar'],
+                                     input['alter_param']['logweight'])
+        else:
+            raise ValueError('Not valid data name')
+        vis(null_model, alter_model, input['null'][0], input['alter'][0], data_name)
