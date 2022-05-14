@@ -13,16 +13,16 @@ class KSD:
             statistic = []
             pvalue = []
             num_tests = alter_samples.size(0)
-            num_samples_alter = alter_samples.size(1)
             for i in range(num_tests):
-                bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], num_samples_alter, null_model)
+                bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], null_model)
                 statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model)
                 statistic.append(statistic_i)
                 pvalue.append(pvalue_i)
         return statistic, pvalue
 
-    def multinomial_bootstrap(self, null_samples, num_samples_alter, null_model):
+    def multinomial_bootstrap(self, null_samples, null_model):
         """Bootstrap algorithm for U-statistics by Huskova & Janssen (1993)"""
+        num_samples_alter = null_samples.size(0)
         null_items, _ = self.KSD_statistics(null_samples, null_model.score, V_stat=self.V_stat)
         weights_exp1, weights_exp2 = self.multinomial_weights(num_samples_alter)
         weights_exp1, weights_exp2 = weights_exp1.to(null_samples.device), weights_exp2.to(null_samples.device)

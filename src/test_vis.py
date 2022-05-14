@@ -81,7 +81,7 @@ if __name__ == "__main__":
             v = torch.randn(dim_v, generator=generator)
             h = torch.randn(dim_h, generator=generator)
             ptb_W = float(1)
-            num_iters = int(2000)
+            num_iters = int(1000)
             params = {'num_trials': num_trials, 'num_samples': num_samples,
                       'W': W, 'v': v, 'h': h, 'ptb_W': ptb_W, 'num_iters': num_iters}
         else:

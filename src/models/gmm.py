@@ -61,13 +61,7 @@ class GMM(nn.Module):
             _probs, mpdf = self.pdf(x, item=True)
             mdpdf = 0
             for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp()):
-                # print(x.size(), mean.size(), var.size(), _prob.size())
                 mdpdf += _prob.view(-1, 1) * (-(x - mean).matmul(torch.linalg.inv(var)))
-            #     print(k)
-            # exit()
-            # mdpdf = sum([_prob * (-(x - mean) / var)
-            #              for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
-            print(mdpdf.size(), mpdf.size())
             score_ = mdpdf / mpdf
         return score_
 

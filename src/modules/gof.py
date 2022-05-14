@@ -50,6 +50,7 @@ class GoodnessOfFit:
         alter_samples = torch.split(alter, alter_num_samples, dim=0)
         if len(null_samples) % alter_num_samples != 0:
             null_samples = null_samples[:-1]
+        null_samples = torch.stack(null_samples, dim=0)
         if len(alter_samples) % alter_num_samples != 0:
             alter_samples = alter_samples[:-1]
         alter_samples = torch.stack(alter_samples, dim=0)

@@ -82,10 +82,15 @@ class GMM(Dataset):
         alter_mean = self.mean + ptb_mean
         if d == 1:
             ptb_logvar = self.ptb_logvar * torch.randn((self.num_trials, *self.logvar.size()))
+            alter_logvar = self.logvar + ptb_logvar
         else:
-            ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials * k, d))).view(
-                self.num_trials, k, d, d)
-        alter_logvar = self.logvar + ptb_logvar
+            pd_flag = False
+            while not pd_flag:
+                ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials * k, d))).view(
+                    self.num_trials, k, d, d)
+                alter_logvar = self.logvar + ptb_logvar
+                if (torch.linalg.eigvalsh(alter_logvar.exp()) > 0).all():
+                    pd_flag = True
         ptb_logweight = self.ptb_logweight * torch.randn((self.num_trials, *self.logweight.size()))
         alter_logweight = self.logweight + ptb_logweight
         if d == 1:

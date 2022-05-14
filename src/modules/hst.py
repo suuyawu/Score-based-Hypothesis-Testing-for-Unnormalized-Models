@@ -19,9 +19,8 @@ class HST:
             if alter_model is None:
                 alter_model = eval('models.{}(null_model.params).to(cfg["device"])'.format(cfg['model_name']))
                 alter_model.fit(alter_samples[i])
-            # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model,
-            #                                                     alter_model)
-            bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
+            bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], null_model, alter_model)
+            # bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
             statistic_i, pvalue_i = self.density_test(alter_samples[i], bootstrap_null_samples, null_model,
                                                       alter_model, self.bootstrap_approx)
             statistic.append(statistic_i)
@@ -29,8 +28,9 @@ class HST:
         return statistic, pvalue
 
     def m_out_n_bootstrap(self, null_samples, num_samples_alter, null_model, alter_model):
-        num_samples_null = null_samples.size(0)
         """Bootstrap algorithm (m out of n) for hypothesis testing by Bickel & Ren (2001)"""
+        null_samples = null_samples.view(-1, *null_samples.size()[1:])
+        num_samples_null = null_samples.size(0)
         null_items, _ = self.hst(null_samples, null_model.hscore, alter_model.hscore)
         _index = torch.multinomial(
             null_items.new_ones(num_samples_null).repeat(self.num_bootstrap, 1) / num_samples_null, num_samples_alter,
@@ -39,9 +39,10 @@ class HST:
         bootstrap_null_samples = torch.sum(bootstrap_null_items, dim=-1)
         return bootstrap_null_samples
 
-    def multinomial_bootstrap(self, null_samples, num_samples_alter, null_model, alter_model):
+    def multinomial_bootstrap(self, null_samples, null_model, alter_model):
         """Bootstrap algorithm for U-statistics by Huskova & Janssen (1993)"""
-        null_items, _ = self.hst(null_samples[:num_samples_alter], null_model.pdf, alter_model.pdf)
+        num_samples_alter = null_samples.size(0)
+        null_items, _ = self.hst(null_samples, null_model.pdf, alter_model.pdf)
         weights_exp1, weights_exp2 = self.multinomial_weights(num_samples_alter)
         weights_exp1, weights_exp2 = weights_exp1.to(null_samples.device), weights_exp2.to(null_samples.device)
         null_items = torch.unsqueeze(null_items, dim=0)  # 1 x N x N

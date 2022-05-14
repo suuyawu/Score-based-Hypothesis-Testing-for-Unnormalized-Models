@@ -114,16 +114,16 @@ def process_control():
     cfg['ptb'] = cfg['control']['ptb']
     cfg['alter_num_samples'] = int(cfg['control']['alter_num_samples'])
     cfg['alter_noise'] = float(cfg['control']['alter_noise'])
-    cfg['num_trials'] = 1000
-    cfg['num_samples'] = 500
+    cfg['num_trials'] = 10
+    cfg['num_samples'] = 100000
     cfg['gof'] = {}
     cfg['gof']['batch_size'] = {'test': 1}
     cfg['gof']['shuffle'] = {'test': False}
     d = 2
     if d == 1:
         cfg['mvn'] = {'mean': torch.tensor([0.]), 'logvar': torch.tensor([1.])}
-        cfg['gmm'] = {'mean': torch.tensor([[0.], [5.], [2.]]),
-                      'logvar': torch.tensor([[1.], [0.2], [0.8]]),
+        cfg['gmm'] = {'mean': torch.tensor([[0.], [2.], [4.]]),
+                      'logvar': torch.tensor([[0.], [0.2], [0.4]]),
                       'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
                       'num_components': 3}
         dim_v = 1
@@ -135,11 +135,11 @@ def process_control():
         h = torch.randn(dim_h, generator=generator)
         cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(100)}
     else:
-        cfg['mvn'] = {'mean': torch.tensor([0., 5.]), 'logvar': torch.tensor([[1., 0.1], [0.1, 1.]])}
-        cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [5., 0.], [2., 5.]]),
-                      'logvar': torch.tensor([[[1., 0.1], [0.1, 1.]],
-                                              [[0.5, 0.1], [0.1, 0.5]],
-                                              [[0.8, 0.1], [0.1, 0.8]]]),
+        cfg['mvn'] = {'mean': torch.tensor([0., 0.]), 'logvar': torch.tensor([[0., -0.3], [-0.3, 0.]])}
+        cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [4., 0.], [0., 4.]]),
+                      'logvar': torch.tensor([[[0., -0.3], [-0.3, 0.]],
+                                              [[0.2, -0.3], [-0.3, 0.2]],
+                                              [[0.4, -0.3], [-0.3, 0.4]]]),
                       'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
                       'num_components': 3}
         dim_v = 50
@@ -149,7 +149,7 @@ def process_control():
         W = torch.randn(dim_v, dim_h, generator=generator)
         v = torch.randn(dim_v, generator=generator)
         h = torch.randn(dim_h, generator=generator)
-        cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(100)}
+        cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1000)}
     cfg['num_bootstrap'] = 1000
     cfg['alpha'] = 0.05
     return
