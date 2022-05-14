@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from scipy.stats import chi2
 
 
 class HST:
@@ -9,11 +10,13 @@ class HST:
         self.bootstrap_approx = bootstrap_approx
 
     def test(self, null_samples, alter_samples, null_model, alter_model=None):
+        num_tests = alter_samples.size(0)
+        num_samples_alter = alter_samples.size(1)
         if alter_model is None:
             pass
             # need model fitting
-        bootstrap_null_samples = self.m_out_n_bootstrap(len(null_samples), len(alter_samples), null_samples, null_model,
-                                                        alter_model)
+        bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
+        # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
         statistic = []
         pvalue = []
         for i in range(len(alter_samples)):
@@ -23,8 +26,8 @@ class HST:
             pvalue.append(pvalue_i)
         return statistic, pvalue
 
-    def m_out_n_bootstrap(self, num_samples_null, num_samples_alter, null_samples, null_model,
-                          alter_model):
+    def m_out_n_bootstrap(self, null_samples, num_samples_alter, null_model, alter_model):
+        num_samples_null = null_samples.size(0)
         """Bootstrap algorithm (m out of n) for hypothesis testing by Bickel & Ren (2001)"""
         null_items, _ = self.hst(null_samples, null_model.hscore, alter_model.hscore)
         _index = torch.multinomial(
@@ -34,11 +37,32 @@ class HST:
         bootstrap_null_samples = torch.sum(bootstrap_null_items, dim=-1)
         return bootstrap_null_samples
 
+    def multinomial_bootstrap(self, null_samples, num_samples_alter, null_model, alter_model):
+        """Bootstrap algorithm for U-statistics by Huskova & Janssen (1993)"""
+        null_items, _ = self.hst(null_samples[:num_samples_alter], null_model.pdf, alter_model.pdf)
+        weights_exp1, weights_exp2 = self.multinomial_weights(num_samples_alter)
+        weights_exp1, weights_exp2 = weights_exp1.to(null_samples.device), weights_exp2.to(null_samples.device)
+        null_items = torch.unsqueeze(null_items, dim=0)  # 1 x N x N
+        bootstrap_null_samples = (weights_exp1 - 1. / num_samples_alter) * null_items * (
+                weights_exp2 - 1. / num_samples_alter)  # m x N x N
+        bootstrap_null_samples = torch.sum(torch.sum(bootstrap_null_samples, dim=-1), dim=-1)
+        return bootstrap_null_samples
+
+    def multinomial_weights(self, num_samples):
+        """Sample multinomial weights for bootstrap by Huskova & Janssen (1993)"""
+        weights = np.random.multinomial(num_samples, np.ones(num_samples) / num_samples, size=self.num_bootstrap)
+        weights = weights / num_samples
+        weights = torch.from_numpy(weights)
+        weights_exp1 = torch.unsqueeze(weights, dim=-1)  # m x N x 1
+        weights_exp2 = torch.unsqueeze(weights, dim=1)  # m x 1 x N
+        return weights_exp1, weights_exp2
+
     def hst(self, samples, null_hscore, alter_hscore):
         """Calculate Hyvarinen Score Difference"""
         Hscore_items = -alter_hscore(samples) + null_hscore(samples)
         # To calculate the scalar for chi2 distribution approximation under the null
         # Hscore_items = Hscore_items*scalar
+        Hscore_items = Hscore_items.reshape(-1)
         test_statistic = torch.sum(Hscore_items, -1)
         return Hscore_items, test_statistic
 
@@ -48,7 +72,6 @@ class HST:
         if bootstrap_approx:
             pvalue = torch.mean((bootstrap_null_samples > test_statistic).float()).item()
         else:
-            from scipy.stats import chi2
             df = 1
             pvalue = 1 - chi2(df).cdf(test_statistic)  # since Λ follows χ2
         return test_statistic, pvalue

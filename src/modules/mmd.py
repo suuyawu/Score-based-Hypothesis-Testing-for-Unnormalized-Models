@@ -11,8 +11,10 @@ class MMD:
         with torch.no_grad():
             statistic = []
             pvalue = []
-            for i in range(len(null_samples)):
-                kernel_hyper = self.make_kernel_hyper(null_samples[i], alter_samples[i])
+            num_tests = alter_samples.size(0)
+            num_samples_alter = alter_samples.size(1)
+            for i in range(num_tests):
+                kernel_hyper = self.make_kernel_hyper(null_samples, alter_samples[i])
                 statistic_i, bootstrap_null_samples = self.MMD_bootstrap(null_samples[i], alter_samples[i],
                                                                          kernel_hyper)
                 pvalue_i = self.MMD_test(statistic_i, bootstrap_null_samples)

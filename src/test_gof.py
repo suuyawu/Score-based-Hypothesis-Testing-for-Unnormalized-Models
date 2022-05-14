@@ -1,6 +1,8 @@
 import argparse
 import datetime
 import os
+
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 import torch
 import torch.backends.cudnn as cudnn
@@ -99,6 +101,10 @@ def test(data_loader, gof, metric, logger):
             logger.append(info, 'test', mean=False)
             print(logger.write('test', metric.metric_name['test']))
         logger.safe(False)
+    info = {'info': ['Model: {}'.format(cfg['model_tag']),
+                     'Test Iter: {}/{}(100%)'.format(len(data_loader), len(data_loader))]}
+    logger.append(info, 'test', mean=False)
+    print(logger.write('test', metric.metric_name['test']))
     return
 
 

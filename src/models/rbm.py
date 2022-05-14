@@ -7,6 +7,7 @@ from config import cfg
 class RBM(nn.Module):
     def __init__(self, W, v, h):
         super().__init__()
+        self.params = {'W': W, 'v': v, 'h': h}
         self.W = nn.Parameter(W)
         self.v = nn.Parameter(v)
         self.h = nn.Parameter(h)

@@ -119,12 +119,13 @@ def process_control():
     cfg['gof'] = {}
     cfg['gof']['batch_size'] = {'test': 1}
     cfg['gof']['shuffle'] = {'test': False}
-    d = 2
+    d = 1
     if d == 1:
         cfg['mvn'] = {'mean': torch.tensor([0.]), 'logvar': torch.tensor([1.])}
         cfg['gmm'] = {'mean': torch.tensor([[0.], [5.], [2.]]),
                       'logvar': torch.tensor([[1.], [0.2], [0.8]]),
-                      'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2]))}
+                      'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
+                      'num_components': 3}
         dim_v = 1
         dim_h = 40
         generator = torch.Generator()
@@ -139,7 +140,8 @@ def process_control():
                       'logvar': torch.tensor([[[1., 0.1], [0.1, 1.]],
                                               [[0.5, 0.1], [0.1, 0.5]],
                                               [[0.8, 0.1], [0.1, 0.8]]]),
-                      'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2]))}
+                      'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
+                      'num_components': 3}
         dim_v = 50
         dim_h = 40
         generator = torch.Generator()

@@ -48,14 +48,23 @@ import models
 #     alter = torch.gather(alter, -1, index=alter_mixture_idx.unsqueeze(-1))
 #     print(alter.size())
 
-if __name__ == "__main__":
-    mean = torch.tensor([0., 5.])
-    logvar = torch.tensor([[1., 0.], [0., 1.]]).log()
-    mvn = models.MVN(mean, logvar)
-    true_model = torch.distributions.multivariate_normal.MultivariateNormal(mean, logvar.exp().sqrt())
-    x = true_model.rsample((100,))
-    x = x.unsqueeze(0).repeat(5, 1, 1)
-    print(x.shape)
-    hscore = mvn.hscore(x)
-    print(hscore.shape)
-    
+# if __name__ == "__main__":
+#     mean = torch.tensor([0., 5.])
+#     logvar = torch.tensor([[1., 0.], [0., 1.]]).log()
+#     mvn = models.MVN(mean, logvar)
+#     true_model = torch.distributions.multivariate_normal.MultivariateNormal(mean, logvar.exp().sqrt())
+#     x = true_model.rsample((100,))
+#     # x = x.unsqueeze(0).repeat(5, 1, 1)
+#     print(x.shape)
+#     hscore = mvn.hscore(x)
+#     print(hscore.shape)
+
+# if __name__ == "__main__":
+#     a = torch.arange(100)
+#     n = 15
+#     num_chunks = len(a) // n
+#     b = torch.split(a, n)
+#     if len(a) % n != 0:
+#         b = b[:-1]
+#     print(len(b), num_chunks)
+#     print(b)

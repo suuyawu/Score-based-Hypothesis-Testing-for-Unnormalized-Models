@@ -36,7 +36,7 @@ class GoodnessOfFit:
         elif self.test_mode in ['hst-b-g', 'hst-b-e']:
             gof = HST(cfg['num_bootstrap'], True)
         elif self.test_mode in ['hst-chi2-g', 'hst-chi2-e']:
-            gof = HST(cfg['num_bootstrap'], True)
+            gof = HST(cfg['num_bootstrap'], False)
         else:
             raise ValueError('Not valid test mode')
         return gof
@@ -46,8 +46,11 @@ class GoodnessOfFit:
         alter_num_samples = cfg['alter_num_samples']
         null, alter, null_param, alter_param = input['null'], input['alter'], input['null_param'], input['alter_param']
         alter = alter + alter_noise * torch.randn(alter.size(), device=alter.device)
-        null_samples = torch.stack(torch.split(null, alter_num_samples, dim=0), dim=0)
-        alter_samples = torch.stack(torch.split(alter, alter_num_samples, dim=0), dim=0)
+        null_samples = null
+        alter_samples = torch.split(alter, alter_num_samples, dim=0)
+        if len(alter_samples) % alter_num_samples != 0:
+            alter_samples = alter_samples[:-1]
+        alter_samples = torch.stack(alter_samples, dim=0)
         if self.test_mode in ['cvm', 'ks']:
             alter_samples = alter_samples.cpu().numpy()
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
