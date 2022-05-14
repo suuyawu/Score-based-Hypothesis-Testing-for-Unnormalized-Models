@@ -46,8 +46,10 @@ class GoodnessOfFit:
         alter_num_samples = cfg['alter_num_samples']
         null, alter, null_param, alter_param = input['null'], input['alter'], input['null_param'], input['alter_param']
         alter = alter + alter_noise * torch.randn(alter.size(), device=alter.device)
-        null_samples = null
+        null_samples = torch.split(null, alter_num_samples, dim=0)
         alter_samples = torch.split(alter, alter_num_samples, dim=0)
+        if len(null_samples) % alter_num_samples != 0:
+            null_samples = null_samples[:-1]
         if len(alter_samples) % alter_num_samples != 0:
             alter_samples = alter_samples[:-1]
         alter_samples = torch.stack(alter_samples, dim=0)

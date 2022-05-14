@@ -14,7 +14,7 @@ class MMD:
             num_tests = alter_samples.size(0)
             num_samples_alter = alter_samples.size(1)
             for i in range(num_tests):
-                kernel_hyper = self.make_kernel_hyper(null_samples, alter_samples[i])
+                kernel_hyper = self.make_kernel_hyper(null_samples[i], alter_samples[i])
                 statistic_i, bootstrap_null_samples = self.MMD_bootstrap(null_samples[i], alter_samples[i],
                                                                          kernel_hyper)
                 pvalue_i = self.MMD_test(statistic_i, bootstrap_null_samples)
@@ -44,7 +44,7 @@ class MMD:
                 median_dist = torch.median(dist[dist > 0.])
         return median_dist.clone().detach()
 
-    def MMD_bootstrap(self, null_samples, alter_samples, kernel_hyper, split=1):
+    def MMD_bootstrap(self, null_samples, alter_samples, kernel_hyper):
         num_samples = null_samples.shape[0]
         weights = np.random.multinomial(num_samples, np.ones(num_samples) / num_samples, size=self.num_bootstrap)
         weights = weights / num_samples

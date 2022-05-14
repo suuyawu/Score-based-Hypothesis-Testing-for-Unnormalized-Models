@@ -14,16 +14,16 @@ class KSD:
             pvalue = []
             num_tests = alter_samples.size(0)
             num_samples_alter = alter_samples.size(1)
-            bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model.score)
             for i in range(num_tests):
-                statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model.score)
+                bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], num_samples_alter, null_model)
+                statistic_i, pvalue_i = self.KSD_U_test(alter_samples[i], bootstrap_null_samples, null_model)
                 statistic.append(statistic_i)
                 pvalue.append(pvalue_i)
         return statistic, pvalue
 
-    def multinomial_bootstrap(self, null_samples, num_samples_alter, null_score):
+    def multinomial_bootstrap(self, null_samples, num_samples_alter, null_model):
         """Bootstrap algorithm for U-statistics by Huskova & Janssen (1993)"""
-        null_items, _ = self.KSD_statistics(null_samples[:num_samples_alter], null_score, V_stat=self.V_stat)
+        null_items, _ = self.KSD_statistics(null_samples, null_model.score, V_stat=self.V_stat)
         weights_exp1, weights_exp2 = self.multinomial_weights(num_samples_alter)
         weights_exp1, weights_exp2 = weights_exp1.to(null_samples.device), weights_exp2.to(null_samples.device)
         null_items = torch.unsqueeze(null_items, dim=0)  # 1 x N x N
@@ -32,8 +32,8 @@ class KSD:
         bootstrap_null_samples = torch.sum(torch.sum(bootstrap_null_samples, dim=-1), dim=-1)
         return bootstrap_null_samples
 
-    def KSD_U_test(self, alter_samples, bootstrap_null_samples, null_score):
-        _, test_statistic = self.KSD_statistics(alter_samples, null_score, V_stat=self.V_stat)
+    def KSD_U_test(self, alter_samples, bootstrap_null_samples, null_model):
+        _, test_statistic = self.KSD_statistics(alter_samples, null_model.score, V_stat=self.V_stat)
         test_statistic = test_statistic.item()
         pvalue = (bootstrap_null_samples >= test_statistic).float().mean().item()
         return test_statistic, pvalue

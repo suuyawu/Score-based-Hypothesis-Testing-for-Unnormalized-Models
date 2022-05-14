@@ -1,7 +1,8 @@
 import numpy as np
 import torch
+import models
 from scipy.stats import chi2
-
+from config import cfg
 
 class HST:
     def __init__(self, num_bootstrap, bootstrap_approx):
@@ -12,14 +13,15 @@ class HST:
     def test(self, null_samples, alter_samples, null_model, alter_model=None):
         num_tests = alter_samples.size(0)
         num_samples_alter = alter_samples.size(1)
-        if alter_model is None:
-            pass
-            # need model fitting
-        bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
-        # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
         statistic = []
         pvalue = []
-        for i in range(len(alter_samples)):
+        for i in range(num_tests):
+            if alter_model is None:
+                alter_model = eval('models.{}(null_model.params).to(cfg["device"])'.format(cfg['model_name']))
+                alter_model.fit(alter_samples[i])
+            # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model,
+            #                                                     alter_model)
+            bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
             statistic_i, pvalue_i = self.density_test(alter_samples[i], bootstrap_null_samples, null_model,
                                                       alter_model, self.bootstrap_approx)
             statistic.append(statistic_i)

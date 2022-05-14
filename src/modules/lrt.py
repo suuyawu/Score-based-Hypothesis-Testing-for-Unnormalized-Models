@@ -13,20 +13,19 @@ class LRT:
     def test(self, null_samples, alter_samples, null_model, alter_model=None):
         num_tests = alter_samples.size(0)
         num_samples_alter = alter_samples.size(1)
-        with torch.no_grad():
-            statistic = []
-            pvalue = []
-            for i in range(num_tests):
-                if alter_model is None:
-                    alter_model = eval('models.{}(null_model.params).to(cfg["device"])'.format(cfg['model_name']))
-                    alter_model.fit(alter_samples[i])
-                bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model,
-                                                                    alter_model)
-                # bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
-                statistic_i, pvalue_i = self.density_test(alter_samples[i], bootstrap_null_samples, null_model,
-                                                          alter_model, self.bootstrap_approx)
-                statistic.append(statistic_i)
-                pvalue.append(pvalue_i)
+        statistic = []
+        pvalue = []
+        for i in range(num_tests):
+            if alter_model is None:
+                alter_model = eval('models.{}(null_model.params).to(cfg["device"])'.format(cfg['model_name']))
+                alter_model.fit(alter_samples[i])
+            # bootstrap_null_samples = self.multinomial_bootstrap(null_samples, num_samples_alter, null_model,
+            #                                                     alter_model)
+            bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model, alter_model)
+            statistic_i, pvalue_i = self.density_test(alter_samples[i], bootstrap_null_samples, null_model,
+                                                      alter_model, self.bootstrap_approx)
+            statistic.append(statistic_i)
+            pvalue.append(pvalue_i)
         return statistic, pvalue
 
     def m_out_n_bootstrap(self, null_samples, num_samples_alter, null_model, alter_model):
