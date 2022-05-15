@@ -8,10 +8,14 @@ from utils import make_optimizer
 class RBM(nn.Module):
     def __init__(self, W, v, h):
         super().__init__()
-        self.params = {'W': W, 'v': v, 'h': h}
+        self.reset(W, v, h)
+
+    def reset(self, W, v, h):
         self.W = nn.Parameter(W)
         self.v = nn.Parameter(v)
         self.h = nn.Parameter(h)
+        self.params = {'W': W, 'v': v, 'h': h}
+        return
 
     def visible_to_hidden(self, v):
         mean_h_cond_v = torch.sigmoid(F.linear(v, self.W.t(), self.h))
@@ -53,7 +57,7 @@ class RBM(nn.Module):
         sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
         _x_px = F.linear(sig, self.W, self.v - v)
         _x_sig = torch.matmul(sig.unsqueeze(-1), (1 - sig).unsqueeze(1))
-        _xx_px = -torch.sum(torch.matmul((1 - sig) * (1 + sig), self.W.t() ** 2), dim=-1) + self.v.shape[0]
+        _xx_px = -torch.sum(torch.matmul((1 - sig) * sig, self.W.t() ** 2), dim=-1) + self.v.shape[0]
         hs = 0.5 * torch.sum(_x_px ** 2, dim=-1) - _xx_px
         return hs
 
@@ -63,31 +67,18 @@ class RBM(nn.Module):
             v = self.hidden_to_visible(h)
         return v
 
-    def fit(self):
-        if 'hst' in cfg['test_mode']:
-            print(self.params)
-            optimizer = make_optimizer(self, 'hst')
-            for i in range(cfg['hst']['num_iters']):
-                def closure():
-                    optimizer.zero_grad()
-                    loss = self.hscore(x).mean()
-                    loss.backward()
-                    # print(loss)
-                    return loss
-
-                optimizer.step(closure)
-                # optimizer.step(closure)
-                # optimizer.zero_grad()
-                # loss = self.hscore(x).mean()
-                # loss.backward()
-                # optimizer.step()
-            mean = self.mean.data
-            logvar = self.logvar.data
-            logweight = self.logweight.data
-            self.reset(mean, logvar, logweight)
-            print(self.params)
-        else:
-            raise ValueError('Not valid test mode')
+    def fit(self, v):
+        self.train(True)
+        optimizer = make_optimizer([self.W], 'hst')
+        for epoch in range(cfg['hst']['num_iters']):
+            optimizer.zero_grad()
+            v_gibbs = self(v, 1)
+            loss = self.free_energy(v).mean() - self.free_energy(v_gibbs).mean()
+            loss = loss.mean()
+            loss.backward()
+            optimizer.step()
+        self.reset(self.W.data, self.v.data, self.h.data)
+        return
 
 
 def rbm(params):

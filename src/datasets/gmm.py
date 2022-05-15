@@ -84,13 +84,16 @@ class GMM(Dataset):
             ptb_logvar = self.ptb_logvar * torch.randn((self.num_trials, *self.logvar.size()))
             alter_logvar = self.logvar + ptb_logvar
         else:
-            pd_flag = False
-            while not pd_flag:
-                ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials * k, d))).view(
-                    self.num_trials, k, d, d)
-                alter_logvar = self.logvar + ptb_logvar
-                if (torch.linalg.eigvalsh(alter_logvar.exp()) > 0).all():
-                    pd_flag = True
+            alter_logvar = []
+            for i in range(self.num_trials):
+                pd_flag = False
+                while not pd_flag:
+                    ptb_logvar_i = torch.diag_embed(self.ptb_logvar * torch.randn((1 * k, d))).view(1, k, d, d)
+                    alter_logvar_i = self.logvar + ptb_logvar_i
+                    if (torch.linalg.eigvalsh(alter_logvar_i.exp()) > 0).all():
+                        pd_flag = True
+                        alter_logvar.append(alter_logvar_i)
+            alter_logvar = torch.cat(alter_logvar, dim=0)
         ptb_logweight = self.ptb_logweight * torch.randn((self.num_trials, *self.logweight.size()))
         alter_logweight = self.logweight + ptb_logweight
         if d == 1:

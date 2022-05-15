@@ -114,5 +114,5 @@ class MMD:
         return MMD, K1 + K3 - K2
 
     def MMD_test(self, test_statistic, bootstrap_null_samples):
-        pvalue = torch.mean((bootstrap_null_samples > test_statistic).float()).item()
+        pvalue = torch.mean((bootstrap_null_samples >= test_statistic).float()).item()
         return pvalue

@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import torch
 import models
@@ -17,15 +18,18 @@ class LRT:
         statistic = []
         pvalue = []
         for i in range(num_tests):
-            null_model_emp = eval('models.{}(null_model.params).to(cfg["device"])'.format(cfg['model_name']))
-            null_model_emp.fit(null_samples[i])
             if alter_model is None:
-                alter_model = eval('models.{}(null_model.params).to(cfg["device"])'.format(cfg['model_name']))
+                null_model_emp = eval('models.{}(copy.deepcopy(null_model.params)).to(cfg["device"])'.format(
+                    cfg['model_name']))
+                null_model_emp.fit(null_samples[i])
+                alter_model = eval('models.{}(copy.deepcopy(null_model.params)).to(cfg["device"])'.format(
+                    cfg['model_name']))
                 alter_model.fit(alter_samples[i])
+            else:
+                null_model_emp = alter_model
             with torch.no_grad():
-                bootstrap_null_samples = self.multinomial_bootstrap(null_samples[i], null_model, null_model_emp)
-                # bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model,
-                #                                                 null_model_emp)
+                bootstrap_null_samples = self.m_out_n_bootstrap(null_samples, num_samples_alter, null_model,
+                                                                null_model_emp)
                 statistic_i, pvalue_i = self.density_test(alter_samples[i], bootstrap_null_samples, null_model,
                                                           alter_model, self.bootstrap_approx)
                 statistic.append(statistic_i)
@@ -77,7 +81,7 @@ class LRT:
         _, test_statistic = self.lrt(alter_samples, null_model.pdf, alter_model.pdf)
         test_statistic = test_statistic.item()
         if bootstrap_approx:
-            pvalue = torch.mean((bootstrap_null_samples > test_statistic).float()).item()
+            pvalue = torch.mean((bootstrap_null_samples >= test_statistic).float()).item()
         else:
             df = 1
             pvalue = 1 - chi2(df).cdf(test_statistic)  # since Λ follows χ2

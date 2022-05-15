@@ -94,19 +94,6 @@ class GMM(nn.Module):
         return
 
 
-# x = x.view(-1)
-# probs_, mpdf = self.pdf(x, item=True)
-# mdpdf = (probs_ * (-(x - self.mean) / self.logvar.exp())).sum(dim=0)
-# invcov = self.logvar.exp() ** (-1)
-# t1 = ((x - self.mean) * invcov * invcov).matmul((x - self.mean).transpose(-1, -2))
-# t2 = - invcov.sum()
-# t1 = t1.diagonal(dim1=-2, dim2=-1)
-# ddpdf = (t1 + t2).sum(dim=0)
-# # ddpdf = sum([_prob * ((-(x - mean) / var) ** 2 - 1 / var)
-# #              for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
-# dlnpdf = mdpdf / mpdf
-# hscore_ = -0.5 * (dlnpdf ** 2) + ddpdf / mpdf
-
 def gmm(params):
     mean = params['mean']
     logvar = params['logvar']

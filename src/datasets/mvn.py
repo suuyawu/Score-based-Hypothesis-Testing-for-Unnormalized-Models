@@ -75,12 +75,16 @@ class MVN(Dataset):
             ptb_logvar = self.ptb_logvar * torch.randn((self.num_trials, *self.logvar.size()))
             alter_logvar = self.logvar + ptb_logvar
         else:
-            pd_flag = False
-            while not pd_flag:
-                ptb_logvar = torch.diag_embed(self.ptb_logvar * torch.randn((self.num_trials, d)))
-                alter_logvar = self.logvar + ptb_logvar
-                if (torch.linalg.eigvalsh(alter_logvar.exp()) > 0).all():
-                    pd_flag = True
+            alter_logvar = []
+            for i in range(self.num_trials):
+                pd_flag = False
+                while not pd_flag:
+                    ptb_logvar_i = torch.diag_embed(self.ptb_logvar * torch.randn((1, d)))
+                    alter_logvar_i = self.logvar + ptb_logvar_i
+                    if (torch.linalg.eigvalsh(alter_logvar_i.exp()) > 0).all():
+                        pd_flag = True
+                        alter_logvar.append(alter_logvar_i)
+            alter_logvar = torch.cat(alter_logvar, dim=0)
         if d == 1:
             alter_normal = torch.distributions.normal.Normal(alter_mean, alter_logvar.exp().sqrt())
         else:

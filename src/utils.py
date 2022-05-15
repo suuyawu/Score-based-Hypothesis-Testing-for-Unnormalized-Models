@@ -114,8 +114,8 @@ def process_control():
     cfg['ptb'] = cfg['control']['ptb']
     cfg['alter_num_samples'] = int(cfg['control']['alter_num_samples'])
     cfg['alter_noise'] = float(cfg['control']['alter_noise'])
-    cfg['num_trials'] = 10
-    cfg['num_samples'] = 100000
+    cfg['num_trials'] = 100
+    cfg['num_samples'] = 10000
     cfg['gof'] = {}
     cfg['gof']['batch_size'] = {'test': 1}
     cfg['gof']['shuffle'] = {'test': False}
@@ -127,7 +127,7 @@ def process_control():
                       'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
                       'num_components': 3}
         dim_v = 1
-        dim_h = 40
+        dim_h = 2
         generator = torch.Generator()
         generator.manual_seed(cfg['seed'])
         W = torch.randn(dim_v, dim_h, generator=generator)
@@ -151,13 +151,13 @@ def process_control():
         h = torch.randn(dim_h, generator=generator)
         cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1000)}
     cfg['hst'] = {}
-    cfg['hst']['optimizer_name'] = 'LBFGS'
-    cfg['hst']['lr'] = 3e-2
+    cfg['hst']['optimizer_name'] = 'Adam'
+    cfg['hst']['lr'] = 1e-3
     cfg['hst']['betas'] = (0.9, 0.999)
     cfg['hst']['momentum'] = 0.9
     cfg['hst']['nesterov'] = True
     cfg['hst']['weight_decay'] = 0
-    cfg['hst']['num_iters'] = 10
+    cfg['hst']['num_iters'] = 20
     cfg['num_bootstrap'] = 1000
     cfg['alpha'] = 0.05
     return
@@ -203,15 +203,15 @@ class Stats(object):
         return
 
 
-def make_optimizer(model, tag):
+def make_optimizer(parameters, tag):
     if cfg[tag]['optimizer_name'] == 'SGD':
-        optimizer = optim.SGD(model.parameters(), lr=cfg[tag]['lr'], momentum=cfg[tag]['momentum'],
+        optimizer = optim.SGD(parameters, lr=cfg[tag]['lr'], momentum=cfg[tag]['momentum'],
                               weight_decay=cfg[tag]['weight_decay'], nesterov=cfg[tag]['nesterov'])
     elif cfg[tag]['optimizer_name'] == 'Adam':
-        optimizer = optim.Adam(model.parameters(), lr=cfg[tag]['lr'], betas=cfg[tag]['betas'],
+        optimizer = optim.Adam(parameters, lr=cfg[tag]['lr'], betas=cfg[tag]['betas'],
                                weight_decay=cfg[tag]['weight_decay'])
     elif cfg[tag]['optimizer_name'] == 'LBFGS':
-        optimizer = optim.LBFGS(model.parameters(), lr=cfg[tag]['lr'])
+        optimizer = optim.LBFGS(parameters, lr=cfg[tag]['lr'])
     else:
         raise ValueError('Not valid optimizer name')
     return optimizer

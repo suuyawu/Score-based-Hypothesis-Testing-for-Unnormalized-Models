@@ -18,7 +18,6 @@ class CVM:
                 pvalue.append(pvalue_i)
         return statistic, pvalue
 
-
 class KS:
     def __init__(self):
         super().__init__()
