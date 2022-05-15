@@ -15,8 +15,8 @@ class GoodnessOfFit:
         self.alter_noise = alter_noise
         self.alpha = alpha
         self.gof = self.make_gof()
-        self.statistic = []
-        self.pvalue = []
+        self.statistic = {'t1': [], 't2': []}
+        self.pvalue = {'t1': [], 't2': []}
 
     def make_gof(self):
         if self.test_mode == 'cvm':
@@ -57,44 +57,60 @@ class GoodnessOfFit:
         if self.test_mode in ['cvm', 'ks']:
             alter_samples = alter_samples.cpu().numpy()
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
-            statistic, pvalue = self.gof.test(alter_samples, null_model)
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_model)
+            statistic_t2, pvalue_t2 = self.gof.test(alter_samples, null_model)
         elif self.test_mode in ['ksd-u', 'ksd-v']:
             null_samples = null_samples
             alter_samples = alter_samples
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
-            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model)
+            null_samples_permute = null_samples[torch.randperm(len(null_samples))]
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_samples_permute, null_model)
+            statistic_t2, pvalue_t2 = self.gof.test(null_samples, alter_samples, null_model)
         elif self.test_mode in ['mmd']:
             null_samples = null_samples
             alter_samples = alter_samples
-            statistic, pvalue = self.gof.test(null_samples, alter_samples)
+            null_samples_permute = null_samples[torch.randperm(len(null_samples))]
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_samples_permute)
+            statistic_t2, pvalue_t2 = self.gof.test(null_samples, alter_samples)
         elif self.test_mode in ['lrt-chi2-g', 'lrt-b-g']:
             null_samples = null_samples
             alter_samples = alter_samples
+            null_samples_permute = null_samples[torch.randperm(len(null_samples))]
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
             alter_model = eval('models.{}(alter_param).to(cfg["device"])'.format(cfg['model_name']))
-            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model, alter_model)
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_samples_permute, null_model, alter_model)
+            statistic_t2, pvalue_t2 = self.gof.test(null_samples, alter_samples, null_model, alter_model)
         elif self.test_mode in ['lrt-chi2-e', 'lrt-b-e']:
             null_samples = null_samples
             alter_samples = alter_samples
+            null_samples_permute = null_samples[torch.randperm(len(null_samples))]
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
-            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model)
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_samples_permute, null_model)
+            statistic_t2, pvalue_t2 = self.gof.test(null_samples, alter_samples, null_model)
         elif self.test_mode in ['hst-chi2-g', 'hst-b-g']:
             null_samples = null_samples
             alter_samples = alter_samples
+            null_samples_permute = null_samples[torch.randperm(len(null_samples))]
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
             alter_model = eval('models.{}(alter_param).to(cfg["device"])'.format(cfg['model_name']))
-            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model, alter_model)
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_samples_permute, null_model, alter_model)
+            statistic_t2, pvalue_t2 = self.gof.test(null_samples, alter_samples, null_model, alter_model)
         elif self.test_mode in ['hst-chi2-e', 'hst-b-e']:
             null_samples = null_samples
             alter_samples = alter_samples
+            null_samples_permute = null_samples[torch.randperm(len(null_samples))]
             null_model = eval('models.{}(null_param).to(cfg["device"])'.format(cfg['model_name']))
-            statistic, pvalue = self.gof.test(null_samples, alter_samples, null_model)
+            statistic_t1, pvalue_t1 = self.gof.test(null_samples, null_samples_permute, null_model)
+            statistic_t2, pvalue_t2 = self.gof.test(null_samples, alter_samples, null_model)
         else:
             raise ValueError('Not valid test mode')
-        output = {'statistic': statistic, 'pvalue': pvalue}
+        output = {'statistic_t1': statistic_t1, 'pvalue_t1': pvalue_t1, 'statistic_t2': statistic_t2,
+                  'pvalue_t2': pvalue_t2}
         return output
 
     def update(self, output):
-        self.statistic.append(output['statistic'])
-        self.pvalue.append(output['pvalue'])
+        self.statistic['t1'].append(output['statistic_t1'])
+        self.statistic['t2'].append(output['statistic_t2'])
+        self.pvalue['t1'].append(output['pvalue_t1'])
+        self.pvalue['t2'].append(output['pvalue_t2'])
         return

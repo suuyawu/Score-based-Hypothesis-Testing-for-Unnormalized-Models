@@ -42,7 +42,7 @@ def runExperiment():
     dataset = fetch_dataset(cfg['data_name'], params)
     data_loader = make_data_loader(dataset, 'gof')
     gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
-    metric = Metric(cfg['data_name'], {'test': ['Power']})
+    metric = Metric(cfg['data_name'], {'test': ['Power-t1', 'Power-t2']})
     logger = make_logger(os.path.join('output', 'runs', 'test_{}'.format(cfg['model_tag'])))
     test(data_loader['test'], gof, metric, logger)
     result = {'cfg': cfg, 'logger': logger, 'gof': gof}

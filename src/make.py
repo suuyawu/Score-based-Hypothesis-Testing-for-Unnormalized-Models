@@ -49,42 +49,21 @@ def main():
     num_experiments = [[experiment_step]]
     resume_mode = [[resume_mode]]
     filename = '{}_{}_{}_{}'.format(run, mode, data, model)
-    if mode == 'teacher':
-        script_name = [['{}_teacher.py'.format(run)]]
-        control_name = [[[data], [model], ['1'], ['iid']]]
-        controls_1 = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
-        if data not in ['CIFAR100']:
-            control_name = [[[data], [model], ['10'], ['iid', 'non-iid-l-2', 'non-iid-d-0.1', 'non-iid-d-0.3']]]
-        else:
-            control_name = [[[data], [model], ['10'], ['iid', 'non-iid-d-0.1', 'non-iid-d-0.3']]]
-        controls_10 = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
-        controls = controls_1 + controls_10
-    elif mode == 'uhc':
-        script_name = [['{}_student_s.py'.format(run)]]
-        control_name = [[[data], [model], ['1'], ['iid'], [data], [model], ['uhc']]]
-        controls_1 = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
-        if data not in ['CIFAR100']:
-            control_name = [
-                [[data], [model], ['10'], ['iid', 'non-iid-l-2', 'non-iid-d-0.1', 'non-iid-d-0.3'], [data], [model],
-                 ['uhc']]]
-        else:
-            control_name = [
-                [[data], [model], ['10'], ['iid', 'non-iid-d-0.1', 'non-iid-d-0.3'], [data], [model], ['uhc']]]
-        controls_10 = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
-        controls = controls_1 + controls_10
-    elif mode == 'dist':
-        script_name = [['{}_student_s.py'.format(run)]]
-        control_name = [[[data], [model], ['1'], ['iid'], [data], [model], ['dist']]]
-        controls_1 = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
-        if data not in ['CIFAR100']:
-            control_name = [
-                [[data], [model], ['10'], ['iid', 'non-iid-l-2', 'non-iid-d-0.1', 'non-iid-d-0.3'], [data], [model],
-                 ['dist']]]
-        else:
-            control_name = [
-                [[data], [model], ['10'], ['iid', 'non-iid-d-0.1', 'non-iid-d-0.3'], [data], [model], ['dist']]]
-        controls_10 = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
-        controls = controls_1 + controls_10
+    if mode == 'ptb':
+        script_name = [['{}_gof.py'.format(run)]]
+
+        control_name = [[[data], [model], ptb, ['100'], ['0']]]
+        controls = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
+    elif mode == 'ds':
+        script_name = [['{}_gof.py'.format(run)]]
+
+        control_name = [[[data], [model], ptb, ['100'], ['0']]]
+        controls = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
+    elif mode == 'noise':
+        script_name = [['{}_gof.py'.format(run)]]
+
+        control_name = [[[data], [model], ptb, ['100'], ['0']]]
+        controls = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
     else:
         raise ValueError('Not valid mode')
     s = '#!/bin/bash\n'

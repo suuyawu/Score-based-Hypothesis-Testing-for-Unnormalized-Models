@@ -119,7 +119,7 @@ def process_control():
     cfg['gof'] = {}
     cfg['gof']['batch_size'] = {'test': 1}
     cfg['gof']['shuffle'] = {'test': False}
-    d = 2
+    d = 1
     if d == 1:
         cfg['mvn'] = {'mean': torch.tensor([0.]), 'logvar': torch.tensor([1.])}
         cfg['gmm'] = {'mean': torch.tensor([[0.], [2.], [4.]]),

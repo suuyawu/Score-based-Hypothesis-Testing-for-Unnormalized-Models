@@ -13,7 +13,8 @@ class Metric(object):
     def __init__(self, data_name, metric_name):
         self.data_name = data_name
         self.metric_name = metric_name
-        self.metric = {'Power': (lambda input, output: Power(output['pvalue'], cfg['alpha']))}
+        self.metric = {'Power-t1': (lambda input, output: Power(output['pvalue_t1'], cfg['alpha'])),
+                       'Power-t2': (lambda input, output: Power(output['pvalue_t2'], cfg['alpha']))}
 
     def evaluate(self, metric_names, input, output):
         evaluation = {}

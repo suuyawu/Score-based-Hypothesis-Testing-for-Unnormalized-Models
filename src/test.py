@@ -2,6 +2,7 @@ from config import cfg
 from data import fetch_dataset, make_data_loader
 import torch
 import models
+import numpy as np
 
 # if __name__ == "__main__":
 #     logweight = torch.log(torch.tensor([0.2, 0.8]))
@@ -68,3 +69,7 @@ import models
 #         b = b[:-1]
 #     print(len(b), num_chunks)
 #     print(b)
+
+if __name__ == "__main__":
+    ptb = np.linspace(0, 0.1, 20).tolist()
+    print(ptb)

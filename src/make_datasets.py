@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 import torch.backends.cudnn as cudnn
+import numpy as np
 from config import cfg, process_args
 from data import fetch_dataset
 from utils import save, process_control, make_footprint
@@ -27,8 +28,8 @@ if __name__ == "__main__":
         if data_name == 'MVN':
             mean = cfg['mvn']['mean']
             logvar = cfg['mvn']['logvar']
-            # ptb_mean = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.7, 1, 1.5, 2, 2.5, 3]
-            ptb_mean = [0, 0.1, 1]
+            # ptb_mean = [0, 0.1, 1]
+            ptb_mean = np.linspace(0, 3, 20).tolist()
             for i in range(len(ptb_mean)):
                 ptb_mean_i = float(ptb_mean[i])
                 ptb_logvar = float(0)
@@ -37,7 +38,8 @@ if __name__ == "__main__":
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
-            ptb_logvar = [0, 0.1, 1]
+            # ptb_logvar = [0, 0.1, 1]
+            ptb_logvar = np.linspace(0, 3, 20).tolist()
             for i in range(len(ptb_logvar)):
                 ptb_logvar_i = float(ptb_logvar[i])
                 ptb_mean = float(0)
@@ -50,8 +52,8 @@ if __name__ == "__main__":
             mean = cfg['gmm']['mean']
             logvar = cfg['gmm']['logvar']
             logweight = cfg['gmm']['logweight']
-            # ptb_mean = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.7, 1, 1.5, 2, 2.5, 3]
-            ptb_mean = [0, 0.1, 1]
+            # ptb_mean = [0, 0.1, 1]
+            ptb_mean = np.linspace(0, 3, 20).tolist()
             for i in range(len(ptb_mean)):
                 ptb_mean_i = float(ptb_mean[i])
                 ptb_logvar = float(0)
@@ -62,7 +64,8 @@ if __name__ == "__main__":
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
-            ptb_logvar = [0, 0.1, 1]
+            # ptb_logvar = [0, 0.1, 1]
+            ptb_logvar = np.linspace(0, 3, 20).tolist()
             for i in range(len(ptb_logvar)):
                 ptb_mean = float(0)
                 ptb_logvar_i = float(ptb_logvar[i])
@@ -73,7 +76,8 @@ if __name__ == "__main__":
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
-            ptb_logweight = [0, 0.1, 1]
+            # ptb_logweight = [0, 0.1, 1]
+            ptb_logweight = np.linspace(0, 3, 20).tolist()
             for i in range(len(ptb_logweight)):
                 ptb_mean = float(0)
                 ptb_logvar = float(0)
@@ -89,8 +93,8 @@ if __name__ == "__main__":
             v = cfg['rbm']['v']
             h = cfg['rbm']['h']
             num_iters = cfg['rbm']['num_iters']
-            # ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.016, 0.018, 0.02, 0.025, 0.03, 0.035]
-            ptb_W = [0, 0.0001, 0.005, 0.01, 0.02]
+            # ptb_W = [0, 0.0001, 0.005, 0.01, 0.02]
+            ptb_W = np.linspace(0, 0.05, 20).tolist()
             for i in range(len(ptb_W)):
                 ptb_W_i = float(ptb_W[i])
                 params_i = {'num_trials': num_trials, 'num_samples': num_samples, 'W': W, 'v': v, 'h': h,
