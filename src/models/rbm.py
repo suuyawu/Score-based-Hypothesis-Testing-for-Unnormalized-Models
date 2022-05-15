@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from config import cfg
+from utils import make_optimizer
 
 
 class RBM(nn.Module):
@@ -29,28 +30,28 @@ class RBM(nn.Module):
         v_term = torch.matmul(v, self.v) - 0.5 * torch.sum(v ** 2, dim=-1) - 0.5 * torch.sum(self.v ** 2, dim=-1)
         w_v_h = F.linear(v, self.W.t(), self.h)
         h_term = torch.sum(F.softplus(w_v_h), dim=-1)
-        return -v_term - h_term #(n, )
+        return -v_term - h_term  # (n, )
 
     def pdf(self, x):
         """Unnormalized probability
             \tilde(p)(x) = exp(-F(x))
         """
-        return torch.exp(-self.free_energy(x)) #(n, )
+        return torch.exp(-self.free_energy(x))  # (n, )
 
     def score(self, v):
         """Score function for Gaussian-Bernoulli RBM,
             s(x) = b-x+sigmoid(xW+c)W`
         """
-        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h ))
-        _x_px = F.linear(sig, self.W , self.v  - v)
+        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
+        _x_px = F.linear(sig, self.W, self.v - v)
         return _x_px
 
     def hscore(self, v):
         """Hyvarinen score for Gaussian-Bernoulli RBM,
             s_H(x) = 0.5*||grad_log_px||^2+trace(grad_grad_log_px)
         """
-        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h ))
-        _x_px = F.linear(sig, self.W , self.v  - v)
+        sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
+        _x_px = F.linear(sig, self.W, self.v - v)
         _x_sig = torch.matmul(sig.unsqueeze(-1), (1 - sig).unsqueeze(1))
         _xx_px = -torch.sum(torch.matmul((1 - sig) * (1 + sig), self.W.t() ** 2), dim=-1) + self.v.shape[0]
         hs = 0.5 * torch.sum(_x_px ** 2, dim=-1) - _xx_px
@@ -61,6 +62,33 @@ class RBM(nn.Module):
             h = self.visible_to_hidden(v)
             v = self.hidden_to_visible(h)
         return v
+
+    def fit(self):
+        if 'hst' in cfg['test_mode']:
+            print(self.params)
+            optimizer = make_optimizer(self, 'hst')
+            for i in range(cfg['hst']['num_iters']):
+                def closure():
+                    optimizer.zero_grad()
+                    loss = self.hscore(x).mean()
+                    loss.backward()
+                    # print(loss)
+                    return loss
+
+                optimizer.step(closure)
+                # optimizer.step(closure)
+                # optimizer.zero_grad()
+                # loss = self.hscore(x).mean()
+                # loss.backward()
+                # optimizer.step()
+            mean = self.mean.data
+            logvar = self.logvar.data
+            logweight = self.logweight.data
+            self.reset(mean, logvar, logweight)
+            print(self.params)
+        else:
+            raise ValueError('Not valid test mode')
+
 
 def rbm(params):
     W = params['W']

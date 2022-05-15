@@ -24,6 +24,8 @@ class MVN(nn.Module):
         return
 
     def pdf(self, x):
+        if self.d == 1:
+            x = x.squeeze(-1)
         pdf_ = self.model.log_prob(x).exp()
         return pdf_
 
@@ -47,8 +49,8 @@ class MVN(nn.Module):
         mean = self.mean
         if self.d == 1:
             invcov = self.logvar.exp() ** (-1)
-            t1 = ((x - mean) * invcov * invcov).matmul((x - mean).transpose(-1, -2))
-            t2 = - invcov.sum()
+            t1 = 0.5 * ((x - mean) * invcov * invcov).matmul((x - mean).transpose(-1, -2))
+            t2 = - invcov
         else:
             invcov = torch.linalg.inv(self.logvar.exp())
             t1 = 0.5 * (x - mean).matmul(invcov).matmul(invcov).matmul((x - mean).transpose(-1, -2))

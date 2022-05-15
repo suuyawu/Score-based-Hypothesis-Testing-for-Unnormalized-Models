@@ -20,32 +20,27 @@ class GMM(nn.Module):
         self.params = {'mean': mean, 'logvar': logvar, 'logweight': logweight}
         self.d = self.mean.size(-1)
         if self.d == 1:
-            self.model = [Normal(_mean, _logvar.exp().sqrt())
-                          for (_mean, _logvar) in zip(mean, logvar)]
+            self.model = Normal(mean, logvar.exp().sqrt())
         else:
-            self.model = [MultivariateNormal(_mean, _logvar.exp())
-                          for (_mean, _logvar) in zip(mean, logvar)]
+            self.model = MultivariateNormal(mean, logvar.exp())
         return
 
     def pdf(self, x, item=False):
-        # if self.d == 1 and x.dim() == 3:
-        #     x = x.squeeze(-1)
-        _probs = [w * m.log_prob(x).exp()
-                  for (w, m) in zip(self.logweight.exp(), self.model)]
+        if self.d == 1:
+            probs_ = (self.model.log_prob(x.view(-1)).exp() * self.logweight.exp().view(-1, 1))
+        else:
+            probs_ = (self.model.log_prob(x.unsqueeze(1)).exp() * self.logweight.exp()).transpose(0, 1)
+        pdf_ = probs_.sum(dim=0)
         if item:
             # for score and hyvarinen score calculation
-            return _probs, sum(_probs)
+            return probs_, pdf_
         else:
-            # sum(_probs) in shape (N,)
-            pdf_ = sum(_probs)
             return pdf_
 
     def cdf(self, x):
         if type(x) is np.ndarray:
             x = torch.from_numpy(x).to(self.mean.device)
-        _cums = [w * m.cdf(x)
-                 for (w, m) in zip(self.logweight.exp(), self.model)]
-        cdf_ = sum(_cums)
+        cdf_ = (self.model.cdf(x) * self.logweight.exp().view(-1, 1)).sum(dim=0)
         return cdf_
 
     def cdf_numpy(self, x):
@@ -53,42 +48,39 @@ class GMM(nn.Module):
 
     def score(self, x):
         if self.d == 1:
-            _probs, mpdf = self.pdf(x, item=True)
-            mdpdf = sum([_prob * (-(x - mean) / var)
-                         for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
-            score_ = mdpdf / mpdf
+            probs_, mpdf = self.pdf(x, item=True)
+            mdpdf = (probs_ * (-(x.view(-1) - self.mean) / self.logvar.exp())).sum(dim=0)
+            score_ = (mdpdf / mpdf).view(-1, 1)
         else:
-            _probs, mpdf = self.pdf(x, item=True)
-            mdpdf = 0
-            for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp()):
-                mdpdf += _prob.view(-1, 1) * (-(x - mean).matmul(torch.linalg.inv(var)))
-            score_ = mdpdf / mpdf
+            probs_, mpdf = self.pdf(x, item=True)
+            mdpdf = (probs_.unsqueeze(-1) * (-1 * torch.matmul((x - self.mean.unsqueeze(1)),
+                                                               torch.linalg.inv(self.logvar.exp())))).sum(dim=0)
+            score_ = mdpdf / mpdf.unsqueeze(-1)
         return score_
 
     def hscore(self, x):
         if self.d == 1:
-            _probs, mpdf = self.pdf(x, item=True)
-            mdpdf = sum([_prob * (-(x - mean) / var)
-                         for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
-            ddpdf = sum([_prob * ((-(x - mean) / var) ** 2 - 1 / var)
-                         for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
+            probs_, mpdf = self.pdf(x, item=True)
+            mdpdf = (probs_ * (-(x.view(-1) - self.mean) / self.logvar.exp())).sum(dim=0)
+            invcov = self.logvar.exp() ** (-1)
+            t1 = ((x - self.mean.unsqueeze(1)) * invcov.unsqueeze(-1) * invcov.unsqueeze(-1)).matmul(
+                (x - self.mean.unsqueeze(1)).transpose(-1, -2))
+            t2 = - invcov
+            t1 = t1.diagonal(dim1=-2, dim2=-1)
+            ddpdf = (probs_ * (t1 + t2)).sum(dim=0)
             dlnpdf = mdpdf / mpdf
             hscore_ = -0.5 * (dlnpdf ** 2) + ddpdf / mpdf
         else:
-            _probs, mpdf = self.pdf(x, item=True)
-            mdpdf = 0
-            for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp()):
-                mdpdf += _prob.view(-1, 1) * (-(x - mean).matmul(torch.linalg.inv(var)))
-            ddpdf = 0
-            for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp()):
-                ddpdf += _prob.view(-1, 1) * (-(x - mean).matmul(torch.linalg.inv(var)))
-
-            mdpdf = sum([_prob * (-(x - mean) / var)
-                         for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
-            ddpdf = sum([_prob * ((-(x - mean) / var) ** 2 - 1 / var)
-                         for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
-            dlnpdf = mdpdf / mpdf
-            hscore_ = -0.5 * (dlnpdf ** 2) + ddpdf / mpdf
+            probs_, mpdf = self.pdf(x, item=True)
+            invcov = torch.linalg.inv(self.logvar.exp())
+            mdpdf = (probs_.unsqueeze(-1) * (-1 * torch.matmul((x - self.mean.unsqueeze(1)), invcov))).sum(dim=0)
+            t1 = (x - self.mean.unsqueeze(1)).matmul(invcov).matmul(invcov).matmul(
+                (x - self.mean.unsqueeze(1)).transpose(-1, -2))
+            t2 = - invcov.diagonal(dim1=-2, dim2=-1).sum(-1, keepdim=True)
+            t1 = t1.diagonal(dim1=-2, dim2=-1)
+            ddpdf = (probs_ * (t1 + t2)).sum(dim=0)
+            dlnpdf = mdpdf / mpdf.view(-1, 1)
+            hscore_ = (-0.5 * (dlnpdf ** 2)).sum(dim=-1) + ddpdf / mpdf
         return hscore_
 
     def fit(self, x):
@@ -101,6 +93,19 @@ class GMM(nn.Module):
         self.reset(mean, logvar, logweight)
         return
 
+
+# x = x.view(-1)
+# probs_, mpdf = self.pdf(x, item=True)
+# mdpdf = (probs_ * (-(x - self.mean) / self.logvar.exp())).sum(dim=0)
+# invcov = self.logvar.exp() ** (-1)
+# t1 = ((x - self.mean) * invcov * invcov).matmul((x - self.mean).transpose(-1, -2))
+# t2 = - invcov.sum()
+# t1 = t1.diagonal(dim1=-2, dim2=-1)
+# ddpdf = (t1 + t2).sum(dim=0)
+# # ddpdf = sum([_prob * ((-(x - mean) / var) ** 2 - 1 / var)
+# #              for (_prob, mean, var) in zip(_probs, self.mean, self.logvar.exp())])
+# dlnpdf = mdpdf / mpdf
+# hscore_ = -0.5 * (dlnpdf ** 2) + ddpdf / mpdf
 
 def gmm(params):
     mean = params['mean']

@@ -150,6 +150,14 @@ def process_control():
         v = torch.randn(dim_v, generator=generator)
         h = torch.randn(dim_h, generator=generator)
         cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1000)}
+    cfg['hst'] = {}
+    cfg['hst']['optimizer_name'] = 'LBFGS'
+    cfg['hst']['lr'] = 3e-2
+    cfg['hst']['betas'] = (0.9, 0.999)
+    cfg['hst']['momentum'] = 0.9
+    cfg['hst']['nesterov'] = True
+    cfg['hst']['weight_decay'] = 0
+    cfg['hst']['num_iters'] = 10
     cfg['num_bootstrap'] = 1000
     cfg['alpha'] = 0.05
     return

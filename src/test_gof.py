@@ -92,7 +92,7 @@ def test(data_loader, gof, metric, logger):
         gof.update(output)
         evaluation = metric.evaluate(metric.metric_name['test'], input, output)
         logger.append(evaluation, 'test', 1)
-        if i % int((len(data_loader) * cfg['log_interval']) + 1) == 0:
+        if i % int((len(data_loader) * cfg['log_interval'])) == 0:
             batch_time = (time.time() - start_time) / (i + 1)
             exp_finished_time = datetime.timedelta(seconds=round(batch_time * (len(data_loader) - i - 1)))
             info = {'info': ['Model: {}'.format(cfg['model_tag']),
