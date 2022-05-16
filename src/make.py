@@ -48,22 +48,203 @@ def main():
     world_size = [[world_size]]
     num_experiments = [[experiment_step]]
     resume_mode = [[resume_mode]]
-    filename = '{}_{}_{}_{}'.format(run, mode, data, model)
+    filename = '{}_{}_{}'.format(run, mode, data)
     if mode == 'ptb':
         script_name = [['{}_gof.py'.format(run)]]
-
-        control_name = [[[data], [model], ptb, ['100'], ['0']]]
-        controls = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
+        if data == 'MVN':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            ptb = []
+            ptb_mean = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9, 0.95,
+                        1, 2]
+            ptb_logvar = float(0)
+            for i in range(len(ptb_mean)):
+                ptb_mean_i = float(ptb_mean[i])
+                ptb_i = '{}-{}'.format(ptb_mean_i, ptb_logvar)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_mean = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb = []
+            ptb_mean = float(0)
+            ptb_logvar = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9,
+                          0.95,
+                          1, 2]
+            for i in range(len(ptb_logvar)):
+                ptb_logvar_i = float(ptb_logvar[i])
+                ptb_i = '{}-{}'.format(ptb_mean, ptb_logvar_i)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                            control_name)
+            controls = controls_mean + controls_logvar
+        elif data == 'GMM':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            ptb = []
+            ptb_mean = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9, 0.95,
+                        1, 2]
+            ptb_logvar = float(0)
+            ptb_logweight = float(0)
+            for i in range(len(ptb_mean)):
+                ptb_mean_i = float(ptb_mean[i])
+                ptb_i = '{}-{}-{}'.format(ptb_mean_i, ptb_logvar, ptb_logweight)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_mean = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb = []
+            ptb_mean = float(0)
+            ptb_logvar = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9,
+                          0.95, 1, 2]
+            ptb_logweight = float(0)
+            for i in range(len(ptb_logvar)):
+                ptb_logvar_i = float(ptb_logvar[i])
+                ptb_i = '{}-{}-{}'.format(ptb_mean, ptb_logvar_i, ptb_logweight)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                            control_name)
+            ptb = []
+            ptb_mean = float(0)
+            ptb_logvar = float(0)
+            ptb_logweight = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9,
+                             0.95, 1, 2]
+            for i in range(len(ptb_logweight)):
+                ptb_logweight_i = float(ptb_logweight[i])
+                ptb_i = '{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight_i)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_logweight = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                            control_name)
+            controls = controls_mean + controls_logvar + controls_logweight
+        elif data == 'RBM':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
+            ptb = []
+            ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.012, 0.014, 0.016, 0.018, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035,
+                     0.04, 0.045, 0.05, 0.1, 0.2]
+            for i in range(len(ptb_W)):
+                ptb_W_i = float(ptb_W[i])
+                ptb_i = '{}'.format(ptb_W_i)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_W = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_W
+        else:
+            raise ValueError('not valid data')
     elif mode == 'ds':
         script_name = [['{}_gof.py'.format(run)]]
-
-        control_name = [[[data], [model], ptb, ['100'], ['0']]]
-        controls = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
+        if data == 'MVN':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            data_size = [5, 10, 20, 30, 40, 50, 80, 150, 200]
+            data_size = [str(int(x)) for x in data_size]
+            ptb_mean = float(1)
+            ptb_logvar = float(0)
+            ptb = ['{}-{}'.format(ptb_mean, ptb_logvar)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_mean = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb_mean = float(0)
+            ptb_logvar = float(1)
+            ptb = ['{}-{}'.format(ptb_mean, ptb_logvar)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_mean + controls_logvar
+        elif data == 'GMM':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            data_size = [5, 10, 20, 30, 40, 50, 80, 150, 200]
+            data_size = [str(int(x)) for x in data_size]
+            ptb_mean = float(1)
+            ptb_logvar = float(0)
+            ptb_logweight = float(0)
+            ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_mean = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb_mean = float(0)
+            ptb_logvar = float(1)
+            ptb_logweight = float(0)
+            ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb_mean = float(0)
+            ptb_logvar = float(0)
+            ptb_logweight = float(1)
+            ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_logweight = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_mean + controls_logvar + controls_logweight
+        elif data == 'RBM':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
+            data_size = [5, 10, 20, 30, 40, 50, 80, 150, 200]
+            data_size = [str(int(x)) for x in data_size]
+            ptb_W = float(0.01)
+            ptb = ['{}'.format(ptb_W)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_W = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_W
+        else:
+            raise ValueError('Not valid data')
     elif mode == 'noise':
         script_name = [['{}_gof.py'.format(run)]]
-
-        control_name = [[[data], [model], ptb, ['100'], ['0']]]
-        controls = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode, control_name)
+        if data == 'MVN':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [str(float(x)) for x in noise]
+            ptb_mean = float(1)
+            ptb_logvar = float(0)
+            ptb = ['{}-{}'.format(ptb_mean, ptb_logvar)]
+            control_name = [[[data], test_mode, ptb, ['100'], noise]]
+            controls_mean = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb_mean = float(0)
+            ptb_logvar = float(1)
+            ptb = ['{}-{}'.format(ptb_mean, ptb_logvar)]
+            control_name = [[[data], test_mode, ptb, ['100'], noise]]
+            controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_mean + controls_logvar
+        elif data == 'GMM':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [str(float(x)) for x in noise]
+            ptb_mean = float(1)
+            ptb_logvar = float(0)
+            ptb_logweight = float(0)
+            ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
+            control_name = [[[data], test_mode, ptb, ['100'], noise]]
+            controls_mean = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb_mean = float(0)
+            ptb_logvar = float(1)
+            ptb_logweight = float(0)
+            ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
+            control_name = [[[data], test_mode, ptb, ['100'], noise]]
+            controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            ptb_mean = float(0)
+            ptb_logvar = float(0)
+            ptb_logweight = float(1)
+            ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
+            control_name = [[[data], test_mode, ptb, ['100'], noise]]
+            controls_logweight = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_mean + controls_logvar + controls_logweight
+        elif data == 'RBM':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
+            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [str(float(x)) for x in noise]
+            ptb_W = float(0.01)
+            ptb = ['{}'.format(ptb_W)]
+            control_name = [[[data], test_mode, ptb, ['100'], noise]]
+            controls_W = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
+                                          control_name)
+            controls = controls_W
+        else:
+            raise ValueError('Not valid data')
     else:
         raise ValueError('Not valid mode')
     s = '#!/bin/bash\n'
