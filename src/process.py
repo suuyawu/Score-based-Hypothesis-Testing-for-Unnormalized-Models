@@ -1,3 +1,4 @@
+import copy
 import itertools
 import json
 import numpy as np
@@ -8,10 +9,11 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 result_path = os.path.join('output', 'result')
-save_format = 'pdf'
+save_format = 'png'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
+dpi = 300
 
 
 def make_controls(control_name):
@@ -40,7 +42,7 @@ def make_control_list(mode, data):
             ptb = []
             ptb_mean = float(0)
             ptb_logvar = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9,
-                          0.95,  1, 2]
+                          0.95, 1, 2]
             for i in range(len(ptb_logvar)):
                 ptb_logvar_i = float(ptb_logvar[i])
                 ptb_i = '{}-{}'.format(ptb_mean, ptb_logvar_i)
@@ -87,7 +89,7 @@ def make_control_list(mode, data):
         elif data == 'RBM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
             ptb = []
-            ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.012, 0.014, 0.016, 0.018, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035,
+            ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.011, 0.012, 0.014, 0.015, 0.016, 0.018, 0.02, 0.025, 0.03, 0.035,
                      0.04, 0.045, 0.05, 0.1, 0.2]
             for i in range(len(ptb_W)):
                 ptb_W_i = float(ptb_W[i])
@@ -204,8 +206,11 @@ def make_control_list(mode, data):
 
 
 def main():
+    write = True
     mode = ['ptb', 'ds', 'noise']
     data_name = ['MVN', 'GMM', 'RBM']
+    # mode = ['ptb']
+    # data_name = ['RBM']
     controls = []
     for i in range(len(mode)):
         mode_i = mode[i]
@@ -220,10 +225,11 @@ def main():
     extracted_processed_result_history = {}
     extract_processed_result(extracted_processed_result_exp, processed_result_exp, [])
     extract_processed_result(extracted_processed_result_history, processed_result_history, [])
-    df_exp = make_df_exp(extracted_processed_result_exp)
-    df_history = make_df_history(extracted_processed_result_history)
-    exit()
-    make_vis(df_history)
+    df_exp = make_df_result(extracted_processed_result_exp, 'exp', write)
+    df_history = make_df_result(extracted_processed_result_history, 'history', write)
+    make_vis(df_history, 'ptb')
+    make_vis(df_history, 'ds')
+    make_vis(df_history, 'noise')
     return
 
 
@@ -243,13 +249,13 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
         base_result_path_i = os.path.join(result_path, '{}.pt'.format(model_tag))
         if os.path.exists(base_result_path_i):
             base_result = load(base_result_path_i)
-            for k in base_result['logger']['test'].mean:
+            for k in base_result['logger'].mean:
                 metric_name = k.split('/')[1]
                 if metric_name not in processed_result_exp:
                     processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
                     processed_result_history[metric_name] = {'history': [None for _ in range(num_experiments)]}
-                processed_result_exp[metric_name]['exp'][exp_idx] = base_result['logger']['test'].mean[k]
-                processed_result_history[metric_name]['history'][exp_idx] = base_result['logger']['train'].history[k]
+                processed_result_exp[metric_name]['exp'][exp_idx] = base_result['logger'].mean[k]
+                processed_result_history[metric_name]['history'][exp_idx] = base_result['logger'].history[k]
         else:
             print('Missing {}'.format(base_result_path_i))
     else:
@@ -303,163 +309,131 @@ def extract_processed_result(extracted_processed_result, processed_result, contr
     return
 
 
-def make_df_exp(extracted_processed_result_exp):
+def make_df_result(extracted_processed_result, mode_name, write):
     df = defaultdict(list)
-    for exp_name in extracted_processed_result_exp:
-        control = exp_name.split('_')
-        if len(control) == 3:
-            data_name, model_name, num_supervised = control
-            index_name = ['1']
-            df_name = '_'.join([data_name, model_name, num_supervised])
-        else:
-            data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, data_split_mode, \
-            local_epoch, gm, all_sbn, = control
-            index_name = ['_'.join([local_epoch, gm])]
-            df_name = '_'.join(
-                [data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, data_split_mode, all_sbn])
-        df[df_name].append(pd.DataFrame(data=extracted_processed_result_exp[exp_name], index=index_name))
-    startrow = 0
-    writer = pd.ExcelWriter('{}/result_exp.xlsx'.format(result_path), engine='xlsxwriter')
-    for df_name in df:
-        df[df_name] = pd.concat(df[df_name])
-        df[df_name].to_excel(writer, sheet_name='Sheet1', startrow=startrow + 1)
-        writer.sheets['Sheet1'].write_string(startrow, 0, df_name)
-        startrow = startrow + len(df[df_name].index) + 3
-    writer.save()
+    for exp_name in extracted_processed_result:
+        for k in extracted_processed_result[exp_name]:
+            exp_name_list = exp_name.split('_')
+            ptb, alter_num_samples, alter_noise = exp_name_list[-3:]
+            ptb_list = ptb.split('-')
+            for i in range(len(ptb_list)):
+                ptb_list_ = copy.deepcopy(ptb_list)
+                index_name = [ptb_list[i]]
+                ptb_list_[i] = 'x'
+                ptb_i = '-'.join(ptb_list_)
+                exp_name_ = '_'.join([*exp_name_list[:-3], ptb_i, *exp_name_list[-2:]])
+                df_name = '{}_{}'.format(exp_name_, k)
+                df[df_name].append(
+                    pd.DataFrame(data=[extracted_processed_result[exp_name][k]], index=index_name))
+            index_name = [alter_num_samples]
+            alter_num_samples_ = 'x'
+            exp_name_ = '_'.join([*exp_name_list[:-2], alter_num_samples_, *exp_name_list[-1:]])
+            df_name = '{}_{}'.format(exp_name_, k)
+            df[df_name].append(
+                pd.DataFrame(data=[extracted_processed_result[exp_name][k]], index=index_name))
+            index_name = [alter_noise]
+            alter_noise_ = 'x'
+            exp_name_ = '_'.join([*exp_name_list[:-1], alter_noise_])
+            df_name = '{}_{}'.format(exp_name_, k)
+            df[df_name].append(
+                pd.DataFrame(data=[extracted_processed_result[exp_name][k]], index=index_name))
+    if write:
+        startrow = 0
+        writer = pd.ExcelWriter('{}/result_{}.xlsx'.format(result_path, mode_name), engine='xlsxwriter')
+        for df_name in df:
+            df[df_name] = pd.concat(df[df_name])
+            df[df_name].to_excel(writer, sheet_name='Sheet1', startrow=startrow + 1)
+            writer.sheets['Sheet1'].write_string(startrow, 0, df_name)
+            startrow = startrow + len(df[df_name].index) + 3
+        writer.save()
+    else:
+        for df_name in df:
+            df[df_name] = pd.concat(df[df_name])
     return df
 
 
-def make_df_history(extracted_processed_result_history):
-    df = defaultdict(list)
-    for exp_name in extracted_processed_result_history:
-        control = exp_name.split('_')
-        if len(control) == 3:
-            data_name, model_name, num_supervised = control
-            index_name = ['1']
-            for k in extracted_processed_result_history[exp_name]:
-                df_name = '_'.join([data_name, model_name, num_supervised, k])
-                df[df_name].append(
-                    pd.DataFrame(data=extracted_processed_result_history[exp_name][k].reshape(1, -1), index=index_name))
-        else:
-            data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, data_split_mode, \
-            local_epoch, gm, all_sbn = control
-            index_name = ['_'.join([local_epoch, gm])]
-            for k in extracted_processed_result_history[exp_name]:
-                df_name = '_'.join(
-                    [data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, data_split_mode,
-                     all_sbn,
-                     k])
-                df[df_name].append(
-                    pd.DataFrame(data=extracted_processed_result_history[exp_name][k].reshape(1, -1), index=index_name))
-    startrow = 0
-    writer = pd.ExcelWriter('{}/result_history.xlsx'.format(result_path), engine='xlsxwriter')
-    for df_name in df:
-        df[df_name] = pd.concat(df[df_name])
-        df[df_name].to_excel(writer, sheet_name='Sheet1', startrow=startrow + 1)
-        writer.sheets['Sheet1'].write_string(startrow, 0, df_name)
-        startrow = startrow + len(df[df_name].index) + 3
-    writer.save()
-    return df
-
-
-def make_vis(df):
-    data_split_mode_dict = {'iid': 'IID', 'non-iid-l-2': 'Non-IID, $K=2$',
-                            'non-iid-d-0.1': 'Non-IID, $\operatorname{Dir}(0.1)$',
-                            'non-iid-d-0.3': 'Non-IID, $\operatorname{Dir}(0.3)$'}
-    color = {'5_0.5': 'red', '1_0.5': 'orange', '5_0': 'dodgerblue', '5_0.9': 'blue', '5_0.5_nomixup': 'green',
-             'iid': 'red', 'non-iid-l-2': 'orange', 'non-iid-d-0.1': 'dodgerblue', 'non-iid-d-0.3': 'green'}
-    linestyle = {'5_0.5': '-', '1_0.5': '--', '5_0': ':', '5_0.5_nomixup': '-.', '5_0.9': (0, (1, 5)),
-                 'iid': '-', 'non-iid-l-2': '--', 'non-iid-d-0.1': '-.', 'non-iid-d-0.3': ':'}
-    loc_dict = {'Accuracy': 'lower right', 'Loss': 'upper right'}
+def make_vis(df, vis_mode):
+    color_dict = {'ksd-u': 'blue', 'ksd-v': 'cyan', 'lrt-b-g': 'black', 'lrt-b-e': 'gray', 'hst-b-g': 'red',
+                  'hst-b-e': 'orange', 'mmd': 'green'}
+    linestyle_dict = {'ksd-u': '-', 'ksd-v': '--', 'lrt-b-g': '-', 'lrt-b-e': '--', 'hst-b-g': '-',
+                      'hst-b-e': '--', 'mmd': '-'}
+    label_dict = {'ksd-u': 'KSD-U', 'ksd-v': 'KSD-v', 'lrt-b-g': 'LRT (Ground Truth)', 'lrt-b-e': 'LRT (Empirical)',
+                  'hst-b-g': 'HST (Ground Truth)', 'hst-b-e': 'HST (Empirical)', 'mmd': 'MMD'}
+    marker_dict = {'ksd-u': 'X', 'ksd-v': 'x', 'lrt-b-g': 'D', 'lrt-b-e': 'd',
+                   'hst-b-g': 'o', 'hst-b-e': '^', 'mmd': 's'}
+    label_loc_dict = {'Power': 'lower right', 't1': 'lower right', 't2': 'lower right'}
+    xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
+                   'noise': 'Noise Magnitude $\sigma_{s}$'}
     fontsize = {'legend': 16, 'label': 16, 'ticks': 16}
+    figsize = (10, 4)
+    capsize = 3
+    capthick = 3
     fig = {}
-    reorder_fig = []
+    ax_dict_1, ax_dict_2 = {}, {}
     for df_name in df:
         df_name_list = df_name.split('_')
-        if len(df_name_list) == 5:
-            data_name, model_name, num_supervised, metric_name, stat = df_name.split('_')
-            if stat == 'std':
-                continue
-            df_name_std = '_'.join([data_name, model_name, num_supervised, metric_name, 'std'])
-            fig_name = '_'.join([data_name, model_name, num_supervised, metric_name])
-            fig[fig_name] = plt.figure(fig_name)
-            for ((index, row), (_, row_std)) in zip(df[df_name].iterrows(), df[df_name_std].iterrows()):
-                y = row.to_numpy()
-                yerr = row_std.to_numpy()
-                x = np.arange(len(y))
-                plt.plot(x, y, color='r', linestyle='-')
-                plt.fill_between(x, (y - yerr), (y + yerr), color='r', alpha=.1)
-                plt.xlabel('Communication Rounds', fontsize=fontsize['label'])
-                plt.ylabel(metric_name, fontsize=fontsize['label'])
-                plt.xticks(fontsize=fontsize['ticks'])
-                plt.yticks(fontsize=fontsize['ticks'])
-
+        ptb, alter_num_samples, alter_noise = df_name_list[2], df_name_list[3], df_name_list[4]
+        metric_name, stats = df_name_list[-2], df_name_list[-1]
+        condition = len(df_name_list) == 7 and len(df[df_name]) > 1 and 't2' in metric_name and stats == 'mean'
+        if vis_mode == 'ptb':
+            condition = condition and 'x' in ptb
+        elif vis_mode == 'ds':
+            condition = condition and 'x' in alter_num_samples
+        elif vis_mode == 'noise':
+            condition = condition and 'x' in alter_noise
         else:
-            data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, data_split_mode, all_sbn, \
-            metric_name, stat = df_name.split('_')
-            if stat == 'std':
-                continue
-            df_name_std = '_'.join(
-                [data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, data_split_mode, all_sbn,
-                 metric_name, 'std'])
-            for ((index, row), (_, row_std)) in zip(df[df_name].iterrows(), df[df_name_std].iterrows()):
-                y = row.to_numpy()
-                yerr = row_std.to_numpy()
-                x = np.arange(len(y))
-                if index == '5_0.5' and loss_mode == 'fix-mix':
-                    fig_name = '_'.join(
-                        [data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, all_sbn,
-                         metric_name])
-                    reorder_fig.append(fig_name)
-                    style = data_split_mode
-                    fig[fig_name] = plt.figure(fig_name)
-                    label_name = '{}'.format(data_split_mode_dict[data_split_mode])
-                    plt.plot(x, y, color=color[style], linestyle=linestyle[style], label=label_name)
-                    plt.fill_between(x, (y - yerr), (y + yerr), color=color[style], alpha=.1)
-                    plt.legend(loc=loc_dict[metric_name], fontsize=fontsize['legend'])
-                    plt.xlabel('Communication Rounds', fontsize=fontsize['label'])
-                    plt.ylabel(metric_name, fontsize=fontsize['label'])
-                    plt.xticks(fontsize=fontsize['ticks'])
-                    plt.yticks(fontsize=fontsize['ticks'])
-                if data_split_mode in ['iid', 'non-iid-l-2']:
-                    fig_name = '_'.join(
-                        [data_name, model_name, num_supervised, num_clients, active_rate, data_split_mode, all_sbn,
-                         metric_name])
-                    reorder_fig.append(fig_name)
-                    fig[fig_name] = plt.figure(fig_name)
-                    local_epoch, gm = index.split('_')
-                    if loss_mode == 'fix':
-                        label_name = '$E={}$, $\\beta_g={}$, No mixup'.format(local_epoch, gm)
-                        style = '{}_nomixup'.format(index)
-                    else:
-                        label_name = '$E={}$, $\\beta_g={}$'.format(local_epoch, gm)
-                        style = index
-                    plt.plot(x, y, color=color[style], linestyle=linestyle[style], label=label_name)
-                    plt.fill_between(x, (y - yerr), (y + yerr), color=color[style], alpha=.1)
-                    plt.legend(loc=loc_dict[metric_name], fontsize=fontsize['legend'])
-                    plt.xlabel('Communication Rounds', fontsize=fontsize['label'])
-                    plt.ylabel(metric_name, fontsize=fontsize['label'])
-                    plt.xticks(fontsize=fontsize['ticks'])
-                    plt.yticks(fontsize=fontsize['ticks'])
-    for fig_name in reorder_fig:
-        data_name, model_name, num_supervised, loss_mode, num_clients, active_rate, all_sbn, metric_name = \
-            fig_name.split('_')
-        plt.figure(fig_name)
-        handles, labels = plt.gca().get_legend_handles_labels()
-        if len(handles) == 4:
-            handles = [handles[0], handles[3], handles[2], handles[1]]
-            labels = [labels[0], labels[3], labels[2], labels[1]]
-            plt.legend(handles, labels, loc=loc_dict[metric_name], fontsize=fontsize['legend'])
-        if len(handles) == 5:
-            handles = [handles[0], handles[4], handles[2], handles[3], handles[1]]
-            labels = [labels[0], labels[4], labels[2], labels[3], labels[1]]
-            plt.legend(handles, labels, loc=loc_dict[metric_name], fontsize=fontsize['legend'])
+            raise ValueError('Not valid mode')
+        if condition:
+            test_mode = df_name_list[1]
+            df_name_t2 = df_name
+            x_t2 = df[df_name_t2].index.values
+            x_t2 = np.array([float(x_) for x_ in x_t2])
+            sorted_idx_t2 = np.argsort(x_t2)
+            x_t2 = x_t2[sorted_idx_t2]
+            y_t2 = df[df_name_t2].to_numpy()
+            y_t2 = y_t2[sorted_idx_t2]
+            y_t2_mean = y_t2.mean(axis=-1)
+            y_t2_err = y_t2.std(axis=-1)
+            df_name_t1 = '_'.join([*df_name_list[:-2], 'Power-t1', stats])
+            x_t1 = df[df_name_t1].index.values
+            x_t1 = np.array([float(x_) for x_ in x_t1])
+            sorted_idx_t1 = np.argsort(x_t1)
+            x_t1 = x_t1[sorted_idx_t1]
+            y_t1 = df[df_name_t1].to_numpy()
+            y_t1 = y_t1[sorted_idx_t1]
+            y_t1_mean = y_t1.mean(axis=-1)
+            y_t1_err = y_t1.std(axis=-1)
+            fig_name = '_'.join([df_name_list[0], *df_name_list[2:-2]])
+            fig[fig_name] = plt.figure(fig_name, figsize=figsize)
+            if fig_name not in ax_dict_1:
+                ax_dict_1[fig_name] = fig[fig_name].add_subplot(121)
+                ax_dict_2[fig_name] = fig[fig_name].add_subplot(122)
+            ax_1 = ax_dict_1[fig_name]
+            ax_2 = ax_dict_2[fig_name]
+            label = test_mode
+            ax_1.errorbar(x_t2, y_t2_mean, yerr=y_t2_err, color=color_dict[label], linestyle=linestyle_dict[label],
+                          label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
+            ax_1.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
+            ax_1.set_ylabel('Power', fontsize=fontsize['label'])
+            ax_1.xaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.yaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_2.errorbar(x_t1, y_t1_mean, yerr=y_t1_err, color=color_dict[label], linestyle=linestyle_dict[label],
+                          label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
+            ax_2.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
+            ax_2.set_ylabel('Type I Error', fontsize=fontsize['label'])
+            ax_2.xaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_2.yaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_2.legend(loc=label_loc_dict['t1'], fontsize=fontsize['legend'])
     for fig_name in fig:
         fig[fig_name] = plt.figure(fig_name)
-        plt.grid()
-        fig_path = '{}/{}.{}'.format(vis_path, fig_name, save_format)
-        makedir_exist_ok(vis_path)
-        plt.savefig(fig_path, dpi=500, bbox_inches='tight', pad_inches=0)
+        ax_dict_1[fig_name].grid(linestyle='--', linewidth='0.5')
+        ax_dict_2[fig_name].grid(linestyle='--', linewidth='0.5')
+        fig[fig_name].tight_layout()
+        control = fig_name.split('_')
+        dir_path = os.path.join(vis_path, vis_mode, *control[:-1])
+        fig_path = os.path.join(dir_path, '{}.{}'.format(fig_name, save_format))
+        makedir_exist_ok(dir_path)
+        plt.savefig(fig_path, dpi=dpi, bbox_inches='tight', pad_inches=0)
         plt.close(fig_name)
     return
 
