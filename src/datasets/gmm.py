@@ -96,13 +96,14 @@ class GMM(Dataset):
             alter_logvar = torch.cat(alter_logvar, dim=0)
         ptb_logweight = self.ptb_logweight * torch.randn((self.num_trials, *self.logweight.size()))
         alter_logweight = self.logweight + ptb_logweight
+        alter_logweight = alter_logweight.softmax(dim=-1).log()
         if d == 1:
             alter_normal = torch.distributions.normal.Normal(alter_mean, alter_logvar.exp().sqrt())
         else:
             alter_normal = torch.distributions.multivariate_normal.MultivariateNormal(alter_mean, alter_logvar.exp())
         alter = alter_normal.sample((self.num_samples,))
         alter = alter.permute(1, 0, 2, 3)
-        alter_mixture_idx = torch.multinomial(alter_logweight.softmax(dim=-1),
+        alter_mixture_idx = torch.multinomial(alter_logweight.exp(),
                                               num_samples=self.num_samples,
                                               replacement=True)
         alter_mixture_idx = alter_mixture_idx.view(*alter_mixture_idx.size(), 1, 1).repeat(1, 1, 1, d)

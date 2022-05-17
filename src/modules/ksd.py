@@ -47,7 +47,7 @@ class KSD:
         weights_exp2 = torch.unsqueeze(weights, dim=1)  # m x 1 x N
         return weights_exp1, weights_exp2
 
-    def KSD_statistics(self, y, score_func, width='heuristic', V_stat=False):
+    def KSD_statistics(self, y, score_func, width='median', V_stat=False):
         """KSD for goodness of fit test pytorch implementation of https://rdrr.io/cran/KSD/"""
         # set up the the bandwidth of RBF Kernel
         if width == 'heuristic':

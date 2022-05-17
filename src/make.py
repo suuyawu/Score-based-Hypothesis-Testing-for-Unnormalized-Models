@@ -113,20 +113,20 @@ def main():
                 ptb.append(ptb_i)
             control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
             controls_logweight = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                            control_name)
+                                               control_name)
             controls = controls_mean + controls_logvar + controls_logweight
         elif data == 'RBM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
             ptb = []
             ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.011, 0.012, 0.014, 0.015, 0.016, 0.018, 0.02, 0.025, 0.03, 0.035,
-                     0.04, 0.045, 0.05, 0.1, 0.2]
+                     0.04, 0.045, 0.05, 0.075, 0.1]
             for i in range(len(ptb_W)):
                 ptb_W_i = float(ptb_W[i])
                 ptb_i = '{}'.format(ptb_W_i)
                 ptb.append(ptb_i)
             control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
             controls_W = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                       control_name)
             controls = controls_W
         else:
             raise ValueError('not valid data')
@@ -147,7 +147,7 @@ def main():
             ptb = ['{}-{}'.format(ptb_mean, ptb_logvar)]
             control_name = [[[data], test_mode, ptb, data_size, ['0']]]
             controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                            control_name)
             controls = controls_mean + controls_logvar
         elif data == 'GMM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
@@ -166,24 +166,24 @@ def main():
             ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
             control_name = [[[data], test_mode, ptb, data_size, ['0']]]
             controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                            control_name)
             ptb_mean = float(0)
             ptb_logvar = float(0)
             ptb_logweight = float(1)
             ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
             control_name = [[[data], test_mode, ptb, data_size, ['0']]]
             controls_logweight = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                               control_name)
             controls = controls_mean + controls_logvar + controls_logweight
         elif data == 'RBM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
             data_size = [5, 10, 20, 30, 40, 50, 80, 150, 200]
             data_size = [str(int(x)) for x in data_size]
-            ptb_W = float(0.01)
+            ptb_W = float(0.03)
             ptb = ['{}'.format(ptb_W)]
             control_name = [[[data], test_mode, ptb, data_size, ['0']]]
             controls_W = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                       control_name)
             controls = controls_W
         else:
             raise ValueError('Not valid data')
@@ -204,7 +204,7 @@ def main():
             ptb = ['{}-{}'.format(ptb_mean, ptb_logvar)]
             control_name = [[[data], test_mode, ptb, ['100'], noise]]
             controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                            control_name)
             controls = controls_mean + controls_logvar
         elif data == 'GMM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
@@ -223,24 +223,24 @@ def main():
             ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
             control_name = [[[data], test_mode, ptb, ['100'], noise]]
             controls_logvar = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                            control_name)
             ptb_mean = float(0)
             ptb_logvar = float(0)
             ptb_logweight = float(1)
             ptb = ['{}-{}-{}'.format(ptb_mean, ptb_logvar, ptb_logweight)]
             control_name = [[[data], test_mode, ptb, ['100'], noise]]
             controls_logweight = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                               control_name)
             controls = controls_mean + controls_logvar + controls_logweight
         elif data == 'RBM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
             noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
             noise = [str(float(x)) for x in noise]
-            ptb_W = float(0.01)
+            ptb_W = float(0.03)
             ptb = ['{}'.format(ptb_W)]
             control_name = [[[data], test_mode, ptb, ['100'], noise]]
             controls_W = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,
-                                          control_name)
+                                       control_name)
             controls = controls_W
         else:
             raise ValueError('Not valid data')
