@@ -47,7 +47,7 @@ class RBM(nn.Module):
             s(x) = b-x+sigmoid(xW+c)W`
         """
         sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
-        _x_px = F.linear(sig, self.W, -self.v + v)
+        _x_px = F.linear(sig, self.W, self.v - v)
         return _x_px
 
     def hscore(self, v):
@@ -55,7 +55,7 @@ class RBM(nn.Module):
             s_H(x) = 0.5*||grad_log_px||^2+trace(grad_grad_log_px)
         """
         sig = torch.sigmoid(F.linear(v, self.W.t(), self.h))
-        _x_px = F.linear(sig, self.W, -self.v + v)
+        _x_px = F.linear(sig, self.W, self.v - v)
         _xx_px = -torch.sum(torch.matmul((1 - sig) * sig, self.W.t() ** 2), dim=-1) + self.v.shape[0]
         hs = 0.5 * torch.sum(_x_px ** 2, dim=-1) - _xx_px
         return hs
