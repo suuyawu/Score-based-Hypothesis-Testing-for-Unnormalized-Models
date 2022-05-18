@@ -153,7 +153,7 @@ def make_control_list(mode, data):
     elif mode == 'noise':
         if data == 'MVN':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
-            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [0.005, 0.01, 0.05, 0.1, 0.5, 1, 3, 5, 10]
             noise = [str(float(x)) for x in noise]
             ptb_mean = float(1)
             ptb_logvar = float(0)
@@ -168,7 +168,7 @@ def make_control_list(mode, data):
             controls = controls_mean + controls_logvar
         elif data == 'GMM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
-            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [0.005, 0.01, 0.05, 0.1, 0.5, 1, 3, 5, 10]
             noise = [str(float(x)) for x in noise]
             ptb_mean = float(1)
             ptb_logvar = float(0)
@@ -191,7 +191,7 @@ def make_control_list(mode, data):
             controls = controls_mean + controls_logvar + controls_logweight
         elif data == 'RBM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
-            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [0.005, 0.01, 0.05, 0.1, 0.5, 1, 3, 5, 10]
             noise = [str(float(x)) for x in noise]
             ptb_W = float(0.03)
             ptb = ['{}'.format(ptb_W)]
@@ -357,7 +357,7 @@ def make_vis(df, vis_mode):
                   'hst-b-e': 'orange', 'mmd': 'green'}
     linestyle_dict = {'ksd-u': '-', 'ksd-v': '--', 'lrt-b-g': '-', 'lrt-b-e': '--', 'hst-b-g': '-',
                       'hst-b-e': '--', 'mmd': '-'}
-    label_dict = {'ksd-u': 'KSD-U', 'ksd-v': 'KSD-v', 'lrt-b-g': 'LRT (Ground Truth)', 'lrt-b-e': 'LRT (Empirical)',
+    label_dict = {'ksd-u': 'KSD-U', 'ksd-v': 'KSD-V', 'lrt-b-g': 'LRT (Ground Truth)', 'lrt-b-e': 'LRT (Empirical)',
                   'hst-b-g': 'HST (Ground Truth)', 'hst-b-e': 'HST (Empirical)', 'mmd': 'MMD'}
     marker_dict = {'ksd-u': 'X', 'ksd-v': 'x', 'lrt-b-g': 'D', 'lrt-b-e': 'd',
                    'hst-b-g': 'o', 'hst-b-e': '^', 'mmd': 's'}

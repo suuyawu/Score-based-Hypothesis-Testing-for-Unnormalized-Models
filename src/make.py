@@ -191,7 +191,7 @@ def main():
         script_name = [['{}_gof.py'.format(run)]]
         if data == 'MVN':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
-            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [0.005, 0.01, 0.05, 0.1, 0.5, 1, 3, 5, 10]
             noise = [str(float(x)) for x in noise]
             ptb_mean = float(1)
             ptb_logvar = float(0)
@@ -208,7 +208,7 @@ def main():
             controls = controls_mean + controls_logvar
         elif data == 'GMM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
-            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [0.005, 0.01, 0.05, 0.1, 0.5, 1, 3, 5, 10]
             noise = [str(float(x)) for x in noise]
             ptb_mean = float(1)
             ptb_logvar = float(0)
@@ -234,7 +234,7 @@ def main():
             controls = controls_mean + controls_logvar + controls_logweight
         elif data == 'RBM':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'hst-b-g', 'hst-b-e']
-            noise = [0.005, 0.007, 0.009, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1]
+            noise = [0.005, 0.01, 0.05, 0.1, 0.5, 1, 3, 5, 10]
             noise = [str(float(x)) for x in noise]
             ptb_W = float(0.03)
             ptb = ['{}'.format(ptb_W)]

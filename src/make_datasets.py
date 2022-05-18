@@ -100,7 +100,7 @@ if __name__ == "__main__":
             num_iters = cfg['rbm']['num_iters']
             # ptb_W = [0, 0.0001, 0.005, 0.01, 0.02]
             ptb_W = [0, 0.005, 0.007, 0.009, 0.01, 0.011, 0.012, 0.014, 0.015, 0.016, 0.018, 0.02, 0.025, 0.03, 0.035,
-                     0.04, 0.045, 0.05, 0.1, 0.2]
+                     0.04, 0.045, 0.05, 0.075, 0.1]
             for i in range(len(ptb_W)):
                 ptb_W_i = float(ptb_W[i])
                 params_i = {'num_trials': num_trials, 'num_samples': num_samples, 'W': W, 'v': v, 'h': h,

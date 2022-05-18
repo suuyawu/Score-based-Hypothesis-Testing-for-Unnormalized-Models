@@ -96,7 +96,7 @@ class GMM(Dataset):
             alter_logvar = torch.cat(alter_logvar, dim=0)
         ptb_logweight = self.ptb_logweight * torch.randn((self.num_trials, *self.logweight.size()))
         alter_logweight = self.logweight + ptb_logweight
-        alter_logweight = alter_logweight.softmax(dim=-1).log()
+        alter_logweight = (alter_logweight.exp() / alter_logweight.exp().sum(dim=1, keepdim=True)).log()
         if d == 1:
             alter_normal = torch.distributions.normal.Normal(alter_mean, alter_logvar.exp().sqrt())
         else:
