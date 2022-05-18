@@ -136,14 +136,22 @@ def process_control():
         cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(100)}
     else:
         cfg['mvn'] = {'mean': torch.tensor([0., 0.]), 'logvar': torch.tensor([[0., -0.3], [-0.3, 0.]])}
-        cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [4., 0.], [0., 4.]]),
-                      'logvar': torch.tensor([[[0., -0.3], [-0.3, 0.]],
-                                              [[0.2, -0.3], [-0.3, 0.2]],
-                                              [[0.4, -0.3], [-0.3, 0.4]]]),
+        # cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [4., 0.], [0., 4.]]),
+        #               'logvar': torch.tensor([[[0., -0.3], [-0.3, 0.]],
+        #                                       [[0.2, -0.3], [-0.3, 0.2]],
+        #                                       [[0.4, -0.3], [-0.3, 0.4]]]),
+        #               'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
+        #               'num_components': 3}
+        cfg['gmm'] = {'mean': torch.tensor([[0.], [2.], [4.]]),
+                      'logvar': torch.tensor([[0.], [0.2], [0.4]]),
                       'logweight': torch.log(torch.tensor([0.2, 0.6, 0.2])),
                       'num_components': 3}
+        # dim_v = 30
         dim_v = 50
+        # dim_v = 70
+        # dim_h = 20
         dim_h = 40
+        # dim_h = 60
         generator = torch.Generator()
         generator.manual_seed(cfg['seed'])
         W = torch.randn(dim_v, dim_h, generator=generator)

@@ -206,7 +206,7 @@ def make_control_list(mode, data):
 
 
 def main():
-    write = True
+    write = False
     mode = ['ptb', 'ds', 'noise']
     data_name = ['MVN', 'GMM', 'RBM']
     # mode = ['ptb']
@@ -230,6 +230,9 @@ def main():
     make_vis(df_history, 'ptb')
     make_vis(df_history, 'ds')
     make_vis(df_history, 'noise')
+    make_vis_statistic(df_exp, 'ptb')
+    make_vis_statistic(df_history, 'ds')
+    make_vis_statistic(df_history, 'noise')
     return
 
 
@@ -256,6 +259,26 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
                     processed_result_history[metric_name] = {'history': [None for _ in range(num_experiments)]}
                 processed_result_exp[metric_name]['exp'][exp_idx] = base_result['logger'].mean[k]
                 processed_result_history[metric_name]['history'][exp_idx] = base_result['logger'].history[k]
+            metric_name = 't1-mean'
+            if metric_name not in processed_result_exp:
+                processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
+            t1 = np.nanmean(np.array(base_result['gof'].statistic['t1'])).item()
+            processed_result_exp[metric_name]['exp'][exp_idx] = t1
+            metric_name = 't1-std'
+            if metric_name not in processed_result_exp:
+                processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
+            t1 = np.nanstd(np.array(base_result['gof'].statistic['t1'])).item()
+            processed_result_exp[metric_name]['exp'][exp_idx] = t1
+            metric_name = 't2-mean'
+            if metric_name not in processed_result_exp:
+                processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
+            t2 = np.nanmean(np.array(base_result['gof'].statistic['t2'])).item()
+            processed_result_exp[metric_name]['exp'][exp_idx] = t2
+            metric_name = 't2-std'
+            if metric_name not in processed_result_exp:
+                processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
+            t2 = np.nanstd(np.array(base_result['gof'].statistic['t2'])).item()
+            processed_result_exp[metric_name]['exp'][exp_idx] = t2
         else:
             print('Missing {}'.format(base_result_path_i))
     else:
@@ -374,7 +397,7 @@ def make_vis(df, vis_mode):
         df_name_list = df_name.split('_')
         ptb, alter_num_samples, alter_noise = df_name_list[2], df_name_list[3], df_name_list[4]
         metric_name, stats = df_name_list[-2], df_name_list[-1]
-        condition = len(df_name_list) == 7 and len(df[df_name]) > 1 and 't2' in metric_name and stats == 'mean'
+        condition = len(df_name_list) == 7 and len(df[df_name]) > 1 and metric_name == 'Power-t2' and stats == 'mean'
         if vis_mode == 'ptb':
             condition = condition and 'x' in ptb
         elif vis_mode == 'ds':
@@ -430,7 +453,88 @@ def make_vis(df, vis_mode):
         ax_dict_2[fig_name].grid(linestyle='--', linewidth='0.5')
         fig[fig_name].tight_layout()
         control = fig_name.split('_')
-        dir_path = os.path.join(vis_path, vis_mode, *control[:-1])
+        dir_path = os.path.join(vis_path, 'power', vis_mode, *control[:-1])
+        fig_path = os.path.join(dir_path, '{}.{}'.format(fig_name, save_format))
+        makedir_exist_ok(dir_path)
+        plt.savefig(fig_path, dpi=dpi, bbox_inches='tight', pad_inches=0)
+        plt.close(fig_name)
+    return
+
+
+def make_vis_statistic(df, vis_mode):
+    color_dict = {'Alternative': 'red', 'Null': 'blue'}
+    linestyle_dict = {'Alternative': '-', 'Null': '--'}
+    label_dict = {'Alternative': 'Alternative', 'Null': 'Null'}
+    marker_dict = {'Alternative': 'o', 'Null': '^'}
+    label_loc_dict = {'statistic': 'lower right'}
+    xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
+                   'noise': 'Noise Magnitude $\sigma_{s}$'}
+    fontsize = {'legend': 16, 'label': 16, 'ticks': 16}
+    figsize = (10, 8)
+    capsize = 3
+    capthick = 3
+    fig = {}
+    ax_dict_1 = {}
+    for df_name in df:
+        df_name_list = df_name.split('_')
+        ptb, alter_num_samples, alter_noise = df_name_list[2], df_name_list[3], df_name_list[4]
+        metric_name, stats = df_name_list[-2], df_name_list[-1]
+        condition = len(df_name_list) == 7 and len(df[df_name]) > 1 and metric_name == 't2-mean' and stats == 'mean'
+        if vis_mode == 'ptb':
+            condition = condition and 'x' in ptb
+        elif vis_mode == 'ds':
+            condition = condition and 'x' in alter_num_samples
+        elif vis_mode == 'noise':
+            condition = condition and 'x' in alter_noise
+        else:
+            raise ValueError('Not valid mode')
+        if condition:
+            df_name_t2 = df_name
+            x_t2 = df[df_name_t2].index.values
+            x_t2 = np.array([float(x_) for x_ in x_t2])
+            sorted_idx_t2 = np.argsort(x_t2)
+            x_t2 = x_t2[sorted_idx_t2]
+            y_t2 = df[df_name_t2].to_numpy()
+            y_t2_mean = y_t2[sorted_idx_t2].reshape(-1)
+
+            df_name_t2_std = '_'.join([*df_name_list[:-2], 't2-std', stats])
+            y_t2_err = df[df_name_t2_std].to_numpy()
+            y_t2_err = y_t2_err[sorted_idx_t2].reshape(-1)
+
+            df_name_t1 = '_'.join([*df_name_list[:-2], 't1-mean', stats])
+            x_t1 = df[df_name_t1].index.values
+            x_t1 = np.array([float(x_) for x_ in x_t1])
+            sorted_idx_t1 = np.argsort(x_t1)
+            x_t1 = x_t1[sorted_idx_t1]
+            y_t1 = df[df_name_t1].to_numpy()
+            y_t1_mean = y_t1[sorted_idx_t1].reshape(-1)
+
+            df_name_t1_std = '_'.join([*df_name_list[:-2], 't1-std', stats])
+            y_t1_err = df[df_name_t1_std].to_numpy()
+            y_t1_err = y_t1_err[sorted_idx_t1].reshape(-1)
+
+            fig_name = '_'.join([*df_name_list])
+            fig[fig_name] = plt.figure(fig_name, figsize=figsize)
+            if fig_name not in ax_dict_1:
+                ax_dict_1[fig_name] = fig[fig_name].add_subplot(111)
+            ax_1 = ax_dict_1[fig_name]
+            label = 'Alternative'
+            ax_1.errorbar(x_t2, y_t2_mean, yerr=y_t2_err, color=color_dict[label], linestyle=linestyle_dict[label],
+                          label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
+            label = 'Null'
+            ax_1.errorbar(x_t1, y_t1_mean, yerr=y_t1_err, color=color_dict[label], linestyle=linestyle_dict[label],
+                          label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
+            ax_1.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
+            ax_1.set_ylabel('Test Statistic', fontsize=fontsize['label'])
+            ax_1.xaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.yaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.legend(loc=label_loc_dict['statistic'], fontsize=fontsize['legend'])
+    for fig_name in fig:
+        fig[fig_name] = plt.figure(fig_name)
+        ax_dict_1[fig_name].grid(linestyle='--', linewidth='0.5')
+        fig[fig_name].tight_layout()
+        control = fig_name.split('_')
+        dir_path = os.path.join(vis_path, 'statistic', vis_mode, *control[:-1])
         fig_path = os.path.join(dir_path, '{}.{}'.format(fig_name, save_format))
         makedir_exist_ok(dir_path)
         plt.savefig(fig_path, dpi=dpi, bbox_inches='tight', pad_inches=0)

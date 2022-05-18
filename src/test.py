@@ -70,6 +70,6 @@ import numpy as np
 #     print(len(b), num_chunks)
 #     print(b)
 
-if __name__ == "__main__":
-    ptb = np.linspace(0, 0.1, 20).tolist()
-    print(ptb)
+# if __name__ == "__main__":
+#     ptb = np.linspace(0, 0.1, 20).tolist()
+#     print(ptb)
