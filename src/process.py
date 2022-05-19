@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 result_path = os.path.join('output', 'result')
-save_format = 'png'
+save_format = 'pdf'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
@@ -208,9 +208,9 @@ def make_control_list(mode, data):
 def main():
     write = False
     mode = ['ptb', 'ds', 'noise']
-    data_name = ['MVN', 'GMM', 'RBM']
+    # data_name = ['MVN', 'GMM', 'RBM']
     # mode = ['ptb']
-    # data_name = ['RBM']
+    data_name = ['RBM']
     controls = []
     for i in range(len(mode)):
         mode_i = mode[i]
@@ -380,14 +380,14 @@ def make_vis(df, vis_mode):
                   'hst-b-e': 'orange', 'mmd': 'green'}
     linestyle_dict = {'ksd-u': '-', 'ksd-v': '--', 'lrt-b-g': '-', 'lrt-b-e': '--', 'hst-b-g': '-',
                       'hst-b-e': '--', 'mmd': '-'}
-    label_dict = {'ksd-u': 'KSD-U', 'ksd-v': 'KSD-V', 'lrt-b-g': 'LRT (Ground Truth)', 'lrt-b-e': 'LRT (Empirical)',
-                  'hst-b-g': 'HST (Ground Truth)', 'hst-b-e': 'HST (Empirical)', 'mmd': 'MMD'}
+    label_dict = {'ksd-u': 'KSD-U', 'ksd-v': 'KSD-V', 'lrt-b-g': 'LRT (Simple)', 'lrt-b-e': 'LRT (Composite)',
+                  'hst-b-g': 'HST (Simple)', 'hst-b-e': 'HST (Composite)', 'mmd': 'MMD'}
     marker_dict = {'ksd-u': 'X', 'ksd-v': 'x', 'lrt-b-g': 'D', 'lrt-b-e': 'd',
                    'hst-b-g': 'o', 'hst-b-e': '^', 'mmd': 's'}
     label_loc_dict = {'Power': 'lower right', 't1': 'lower right', 't2': 'lower right'}
     xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
                    'noise': 'Noise Magnitude $\sigma_{s}$'}
-    fontsize = {'legend': 16, 'label': 16, 'ticks': 16}
+    fontsize = {'legend': 12, 'label': 16, 'ticks': 16}
     figsize = (10, 4)
     capsize = 3
     capthick = 3
@@ -417,6 +417,10 @@ def make_vis(df, vis_mode):
             y_t2 = y_t2[sorted_idx_t2]
             y_t2_mean = y_t2.mean(axis=-1)
             y_t2_err = y_t2.std(axis=-1)
+            if vis_mode == 'ptb':
+                x_t2 = x_t2[1:]
+                y_t2_mean = y_t2_mean[1:]
+                y_t2_err = y_t2_err[1:]
             df_name_t1 = '_'.join([*df_name_list[:-2], 'Power-t1', stats])
             x_t1 = df[df_name_t1].index.values
             x_t1 = np.array([float(x_) for x_ in x_t1])
@@ -426,6 +430,10 @@ def make_vis(df, vis_mode):
             y_t1 = y_t1[sorted_idx_t1]
             y_t1_mean = y_t1.mean(axis=-1)
             y_t1_err = y_t1.std(axis=-1)
+            if vis_mode == 'ptb':
+                x_t1 = x_t1[1:]
+                y_t1_mean = y_t1_mean[1:]
+                y_t1_err = y_t1_err[1:]
             fig_name = '_'.join([df_name_list[0], *df_name_list[2:-2]])
             fig[fig_name] = plt.figure(fig_name, figsize=figsize)
             if fig_name not in ax_dict_1:
@@ -440,17 +448,26 @@ def make_vis(df, vis_mode):
             ax_1.set_ylabel('Power', fontsize=fontsize['label'])
             ax_1.xaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_1.yaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.legend(loc=label_loc_dict['t1'], fontsize=fontsize['legend'])
             ax_2.errorbar(x_t1, y_t1_mean, yerr=y_t1_err, color=color_dict[label], linestyle=linestyle_dict[label],
                           label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
             ax_2.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
             ax_2.set_ylabel('Type I Error', fontsize=fontsize['label'])
             ax_2.xaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_2.yaxis.set_tick_params(labelsize=fontsize['ticks'])
-            ax_2.legend(loc=label_loc_dict['t1'], fontsize=fontsize['legend'])
     for fig_name in fig:
         fig[fig_name] = plt.figure(fig_name)
         ax_dict_1[fig_name].grid(linestyle='--', linewidth='0.5')
         ax_dict_2[fig_name].grid(linestyle='--', linewidth='0.5')
+        if vis_mode == 'ptb':
+            ax_1 = ax_dict_1[fig_name]
+            ax_2 = ax_dict_2[fig_name]
+            lim_1 = list(ax_1.get_xlim())
+            lim_2 = list(ax_2.get_xlim())
+            lim_1[0] = 0
+            lim_2[0] = 0
+            ax_1.set_xlim(lim_1)
+            ax_2.set_xlim(lim_2)
         fig[fig_name].tight_layout()
         control = fig_name.split('_')
         dir_path = os.path.join(vis_path, 'power', vis_mode, *control[:-1])
@@ -466,11 +483,11 @@ def make_vis_statistic(df, vis_mode):
     linestyle_dict = {'Alternative': '-', 'Null': '--'}
     label_dict = {'Alternative': 'Alternative', 'Null': 'Null'}
     marker_dict = {'Alternative': 'o', 'Null': '^'}
-    label_loc_dict = {'statistic': 'lower right'}
+    label_loc_dict = {'statistic': 'upper left'}
     xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
                    'noise': 'Noise Magnitude $\sigma_{s}$'}
-    fontsize = {'legend': 16, 'label': 16, 'ticks': 16}
-    figsize = (10, 8)
+    fontsize = {'legend': 12, 'label': 16, 'ticks': 16}
+    figsize = (5, 4)
     capsize = 3
     capthick = 3
     fig = {}
@@ -528,10 +545,16 @@ def make_vis_statistic(df, vis_mode):
             ax_1.set_ylabel('Test Statistic', fontsize=fontsize['label'])
             ax_1.xaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_1.yaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.set_yticks([0])
             ax_1.legend(loc=label_loc_dict['statistic'], fontsize=fontsize['legend'])
     for fig_name in fig:
         fig[fig_name] = plt.figure(fig_name)
         ax_dict_1[fig_name].grid(linestyle='--', linewidth='0.5')
+        ax_1 = ax_dict_1[fig_name]
+        lim_1 = list(ax_1.get_ylim())
+        if lim_1[0] > 0:
+            lim_1[0] = 0
+        ax_1.set_ylim(lim_1)
         fig[fig_name].tight_layout()
         control = fig_name.split('_')
         dir_path = os.path.join(vis_path, 'statistic', vis_mode, *control[:-1])
@@ -541,6 +564,32 @@ def make_vis_statistic(df, vis_mode):
         plt.close(fig_name)
     return
 
+
+def roc_plot(scores, labels, save_path, title):
+    """
+    roc curve
+    input:
+      scores=[[id_score1, ood_score1], [id_score2, ood_score2], ...]
+      labels = [label1, label2, ...]
+    """
+    from sklearn.metrics import roc_curve, auc
+
+    for i, score in enumerate(scores):
+        score_id, score_ood = score[0], score[1]
+        y_true = np.array([0] * len(score_id) + [1] * len(score_ood))
+        score_arr = np.append(score_id, score_ood)
+        fpr, tpr, _ = roc_curve(y_true, score_arr, pos_label=1)
+        roc_auc = auc(fpr, tpr)
+        plt.plot(fpr, tpr, label=labels[i] + "(area = %0.2f)" % roc_auc)
+    plt.plot([0, 1], [0, 1], linestyle="--")
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.savefig(save_path + '_roc.png')
+    plt.close()
 
 if __name__ == '__main__':
     main()
