@@ -1,0 +1,17 @@
+---
+# control
+control:
+  data_name: MVN
+  test_mode: cvm
+  ptb: 0.1-0
+  alter_num_samples: 100
+  alter_noise: 0
+# experiment
+num_workers: 0
+init_seed: 0
+num_experiments: 1
+log_interval: 0.25
+device: cuda
+world_size: 1
+resume_mode: 0
+verbose: False

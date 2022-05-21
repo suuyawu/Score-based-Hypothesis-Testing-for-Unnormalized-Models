@@ -7,9 +7,10 @@ import pandas as pd
 from utils import save, load, makedir_exist_ok
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from sklearn.metrics import roc_curve, auc
 
 result_path = os.path.join('output', 'result')
-save_format = 'pdf'
+save_format = 'png'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
@@ -210,7 +211,7 @@ def main():
     mode = ['ptb', 'ds', 'noise']
     # data_name = ['MVN', 'GMM', 'RBM']
     # mode = ['ptb']
-    data_name = ['RBM']
+    data_name = ['GMM']
     controls = []
     for i in range(len(mode)):
         mode_i = mode[i]
@@ -230,9 +231,10 @@ def main():
     make_vis(df_history, 'ptb')
     make_vis(df_history, 'ds')
     make_vis(df_history, 'noise')
-    make_vis_statistic(df_exp, 'ptb')
-    make_vis_statistic(df_history, 'ds')
-    make_vis_statistic(df_history, 'noise')
+    # make_vis_statistic(df_exp, 'ptb')
+    # make_vis_statistic(df_exp, 'ds')
+    # make_vis_statistic(df_exp, 'noise')
+    make_vis_roc(df_history, 'ptb')
     return
 
 
@@ -279,6 +281,23 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
             t2 = np.nanstd(np.array(base_result['gof'].statistic['t2'])).item()
             processed_result_exp[metric_name]['exp'][exp_idx] = t2
+            num_trials_roc = 100
+            metric_name = 'fpr'
+            if metric_name not in processed_result_history:
+                processed_result_history[metric_name] = {'history': [None for _ in range(num_experiments)]}
+            metric_name = 'tpr'
+            if metric_name not in processed_result_history:
+                processed_result_history[metric_name] = {'history': [None for _ in range(num_experiments)]}
+            t1 = np.array(base_result['gof'].pvalue['t1'])[:num_trials_roc].reshape(-1)
+            t2 = np.array(base_result['gof'].pvalue['t2'])[:num_trials_roc].reshape(-1)
+            valid_mask = ~(np.isinf(t1) | np.isnan(t1) | np.isinf(t2) | np.isnan(t2))
+            t1 = t1[valid_mask]
+            t2 = t2[valid_mask]
+            y_true = np.array([1] * len(t1) + [0] * len(t2))
+            score_arr = np.append(t1, t2)
+            fpr, tpr, _ = roc_curve(y_true, score_arr, pos_label=1)
+            processed_result_history['fpr']['history'][exp_idx] = fpr
+            processed_result_history['tpr']['history'][exp_idx] = tpr
         else:
             print('Missing {}'.format(base_result_path_i))
     else:
@@ -364,10 +383,12 @@ def make_df_result(extracted_processed_result, mode_name, write):
         startrow = 0
         writer = pd.ExcelWriter('{}/result_{}.xlsx'.format(result_path, mode_name), engine='xlsxwriter')
         for df_name in df:
-            df[df_name] = pd.concat(df[df_name])
-            df[df_name].to_excel(writer, sheet_name='Sheet1', startrow=startrow + 1)
-            writer.sheets['Sheet1'].write_string(startrow, 0, df_name)
-            startrow = startrow + len(df[df_name].index) + 3
+            concat_df = pd.concat(df[df_name])
+            if len(concat_df) > 1:
+                df[df_name] = concat_df
+                df[df_name].to_excel(writer, sheet_name='Sheet1', startrow=startrow + 1)
+                writer.sheets['Sheet1'].write_string(startrow, 0, df_name)
+                startrow = startrow + len(df[df_name].index) + 3
         writer.save()
     else:
         for df_name in df:
@@ -387,7 +408,7 @@ def make_vis(df, vis_mode):
     label_loc_dict = {'Power': 'lower right', 't1': 'lower right', 't2': 'lower right'}
     xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
                    'noise': 'Noise Magnitude $\sigma_{s}$'}
-    fontsize = {'legend': 12, 'label': 16, 'ticks': 16}
+    fontsize = {'legend': 14, 'label': 16, 'ticks': 16}
     figsize = (10, 4)
     capsize = 3
     capthick = 3
@@ -452,7 +473,7 @@ def make_vis(df, vis_mode):
             ax_2.errorbar(x_t1, y_t1_mean, yerr=y_t1_err, color=color_dict[label], linestyle=linestyle_dict[label],
                           label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
             ax_2.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
-            ax_2.set_ylabel('Type I Error', fontsize=fontsize['label'])
+            ax_2.set_ylabel('Type I Error Rate', fontsize=fontsize['label'])
             ax_2.xaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_2.yaxis.set_tick_params(labelsize=fontsize['ticks'])
     for fig_name in fig:
@@ -483,10 +504,10 @@ def make_vis_statistic(df, vis_mode):
     linestyle_dict = {'Alternative': '-', 'Null': '--'}
     label_dict = {'Alternative': 'Alternative', 'Null': 'Null'}
     marker_dict = {'Alternative': 'o', 'Null': '^'}
-    label_loc_dict = {'statistic': 'upper left'}
+    label_loc_dict = {'statistic': 'lower right'}
     xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
                    'noise': 'Noise Magnitude $\sigma_{s}$'}
-    fontsize = {'legend': 12, 'label': 16, 'ticks': 16}
+    fontsize = {'legend': 14, 'label': 16, 'ticks': 16}
     figsize = (5, 4)
     capsize = 3
     capthick = 3
@@ -565,6 +586,75 @@ def make_vis_statistic(df, vis_mode):
     return
 
 
+def make_vis_roc(df, vis_mode):
+    color_dict = {'ksd-u': 'blue', 'ksd-v': 'cyan', 'lrt-b-g': 'black', 'lrt-b-e': 'gray', 'hst-b-g': 'red',
+                  'hst-b-e': 'orange', 'mmd': 'green'}
+    linestyle_dict = {'ksd-u': '-', 'ksd-v': '--', 'lrt-b-g': '-', 'lrt-b-e': '--', 'hst-b-g': '-',
+                      'hst-b-e': '--', 'mmd': '-'}
+    label_dict = {'ksd-u': 'KSD-U', 'ksd-v': 'KSD-V', 'lrt-b-g': 'LRT (Simple)', 'lrt-b-e': 'LRT (Composite)',
+                  'hst-b-g': 'HST (Simple)', 'hst-b-e': 'HST (Composite)', 'mmd': 'MMD'}
+    marker_dict = {'ksd-u': 'X', 'ksd-v': 'x', 'lrt-b-g': 'D', 'lrt-b-e': 'd',
+                   'hst-b-g': 'o', 'hst-b-e': '^', 'mmd': 's'}
+    label_loc_dict = {'statistic': 'lower right'}
+    fontsize = {'legend': 12, 'label': 16, 'ticks': 16}
+    figsize = (5, 4)
+    fig = {}
+    ax_dict_1 = {}
+    pivot_ptb_dict = {'MVN-x-0.0': '0.5', 'MVN-0.0-x': '0.5', 'GMM-x-0.0-0.0': '0.5', 'GMM-0.0-x-0.0': '0.5',
+                      'GMM-0.0-0.0-x': '0.5', 'RBM-x': '0.01'}
+    for df_name in df:
+        df_name_list = df_name.split('_')
+        ptb, alter_num_samples, alter_noise = df_name_list[2], df_name_list[3], df_name_list[4]
+        metric_name, stats = df_name_list[-2], df_name_list[-1]
+        condition = len(df_name_list) == 7 and len(df[df_name]) > 1 and metric_name == 'fpr' and stats == 'mean'
+        if vis_mode == 'ptb':
+            condition = condition and 'x' in ptb
+        elif vis_mode == 'ds':
+            condition = condition and 'x' in alter_num_samples
+        elif vis_mode == 'noise':
+            condition = condition and 'x' in alter_noise
+        else:
+            raise ValueError('Not valid mode')
+        if condition:
+            test_mode = df_name_list[1]
+            pivot_index = pivot_ptb_dict['{}-{}'.format(df_name_list[0], df_name_list[2])]
+            df_name_fpr = df_name
+            fpr = df[df_name_fpr].loc[pivot_index].to_numpy().reshape(-1)
+            fpr = fpr[~np.isnan(fpr)]
+            df_name_tpr = '_'.join([*df_name_list[:-2], 'tpr', stats])
+            tpr = df[df_name_tpr].loc[pivot_index].to_numpy().reshape(-1)
+            tpr = tpr[~np.isnan(tpr)]
+            auc_ = auc(fpr, tpr)
+            fig_name = '_'.join([df_name_list[0], *df_name_list[2:-2]])
+            fig[fig_name] = plt.figure(fig_name, figsize=figsize)
+            if fig_name not in ax_dict_1:
+                ax_dict_1[fig_name] = fig[fig_name].add_subplot(111)
+            ax_1 = ax_dict_1[fig_name]
+            label = test_mode
+            ax_1.plot(fpr, tpr, color=color_dict[label], linestyle=linestyle_dict[label],
+                      label='{}, AUC={:.2f}'.format(label_dict[label], auc_), marker=marker_dict[label])
+            ax_1.set_xlabel('False Positive Rate', fontsize=fontsize['label'])
+            ax_1.set_ylabel('True Positive Rate', fontsize=fontsize['label'])
+            ax_1.xaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.yaxis.set_tick_params(labelsize=fontsize['ticks'])
+            ax_1.legend(loc=label_loc_dict['statistic'], fontsize=fontsize['legend'])
+    for fig_name in fig:
+        fig[fig_name] = plt.figure(fig_name)
+        ax_dict_1[fig_name].grid(linestyle='--', linewidth='0.5')
+        ax_1 = ax_dict_1[fig_name]
+        plt.plot([0, 1], [0, 1], linestyle="--", color='lightgray')
+        # ax_1.set_xlim([0, 1])
+        # ax_1.set_ylim([0.0, 1.05])
+        fig[fig_name].tight_layout()
+        control = fig_name.split('_')
+        dir_path = os.path.join(vis_path, 'roc', vis_mode, *control[:-1])
+        fig_path = os.path.join(dir_path, '{}.{}'.format(fig_name, save_format))
+        makedir_exist_ok(dir_path)
+        plt.savefig(fig_path, dpi=dpi, bbox_inches='tight', pad_inches=0)
+        plt.close(fig_name)
+    return
+
+
 def roc_plot(scores, labels, save_path, title):
     """
     roc curve
@@ -590,6 +680,7 @@ def roc_plot(scores, labels, save_path, title):
     plt.legend(loc="lower right")
     plt.savefig(save_path + '_roc.png')
     plt.close()
+
 
 if __name__ == '__main__':
     main()
