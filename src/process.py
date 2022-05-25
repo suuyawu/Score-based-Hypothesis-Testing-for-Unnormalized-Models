@@ -207,14 +207,14 @@ def make_control_list(mode, data):
 
 
 def main():
-    write = True
+    write = False
     # mode = ['ptb', 'ds', 'noise']
-    # mode = ['ptb', 'ds']
-    mode = ['ptb']
+    mode = ['ptb', 'ds']
+    # mode = ['ptb']
     # data_name = ['MVN', 'GMM', 'RBM']
     # mode = ['ptb']
-    # data_name = ['MVN', 'RBM']
-    data_name = ['MVN']
+    data_name = ['MVN', 'RBM']
+    # data_name = ['MVN']
     controls = []
     for i in range(len(mode)):
         mode_i = mode[i]
@@ -231,10 +231,10 @@ def main():
     extract_processed_result(extracted_processed_result_history, processed_result_history, [])
     df_exp = make_df_result(extracted_processed_result_exp, 'exp', write)
     df_history = make_df_result(extracted_processed_result_history, 'history', write)
-    # make_vis(df_history, 'ptb')
-    # make_vis(df_history, 'ds')
+    make_vis(df_history, 'ptb')
+    make_vis(df_history, 'ds')
     # make_vis(df_history, 'noise')
-    make_vis_statistic(df_exp, 'ptb')
+    # make_vis_statistic(df_exp, 'ptb')
     # make_vis_statistic(df_exp, 'ds')
     # make_vis_statistic(df_exp, 'noise')
     # make_vis_roc(df_history, 'ptb')
@@ -444,6 +444,8 @@ def make_vis(df, vis_mode):
     figsize = (10, 4)
     capsize = 3
     capthick = 3
+    capsize = None
+    capthick = None
     fig = {}
     ax_dict_1, ax_dict_2 = {}, {}
     for df_name in df:
