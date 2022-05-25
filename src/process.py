@@ -10,7 +10,7 @@ from collections import defaultdict
 from sklearn.metrics import roc_curve, auc
 
 result_path = os.path.join('output', 'result')
-save_format = 'png'
+save_format = 'pdf'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
@@ -207,11 +207,14 @@ def make_control_list(mode, data):
 
 
 def main():
-    write = False
-    mode = ['ptb', 'ds', 'noise']
+    write = True
+    # mode = ['ptb', 'ds', 'noise']
+    # mode = ['ptb', 'ds']
+    mode = ['ptb']
     # data_name = ['MVN', 'GMM', 'RBM']
     # mode = ['ptb']
-    data_name = ['GMM']
+    # data_name = ['MVN', 'RBM']
+    data_name = ['MVN']
     controls = []
     for i in range(len(mode)):
         mode_i = mode[i]
@@ -228,13 +231,13 @@ def main():
     extract_processed_result(extracted_processed_result_history, processed_result_history, [])
     df_exp = make_df_result(extracted_processed_result_exp, 'exp', write)
     df_history = make_df_result(extracted_processed_result_history, 'history', write)
-    make_vis(df_history, 'ptb')
-    make_vis(df_history, 'ds')
-    make_vis(df_history, 'noise')
-    # make_vis_statistic(df_exp, 'ptb')
+    # make_vis(df_history, 'ptb')
+    # make_vis(df_history, 'ds')
+    # make_vis(df_history, 'noise')
+    make_vis_statistic(df_exp, 'ptb')
     # make_vis_statistic(df_exp, 'ds')
     # make_vis_statistic(df_exp, 'noise')
-    make_vis_roc(df_history, 'ptb')
+    # make_vis_roc(df_history, 'ptb')
     return
 
 
@@ -264,23 +267,52 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
             metric_name = 't1-mean'
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
-            t1 = np.nanmean(np.array(base_result['gof'].statistic['t1'])).item()
+            t1 = np.array(base_result['gof'].statistic['t1'])
+            valid_mask = ~(np.isinf(t1)| np.isnan(t1))
+            t1 = t1[valid_mask]
+            if len(t1) == 0:
+                t1 = np.finfo(np.float32).min
+            else:
+                t1 = np.mean(t1).item()
+            # if t1 < -191809:
+            #     t1 = -19180.9
             processed_result_exp[metric_name]['exp'][exp_idx] = t1
             metric_name = 't1-std'
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
-            t1 = np.nanstd(np.array(base_result['gof'].statistic['t1'])).item()
-            processed_result_exp[metric_name]['exp'][exp_idx] = t1
+            t1 = np.array(base_result['gof'].statistic['t1'])
+            valid_mask = ~(np.isinf(t1)| np.isnan(t1))
+            t1 = t1[valid_mask]
+            if len(t1) == 0:
+                t1_std = 0
+            else:
+                t1_std = np.std(t1).item()
+                # if t1_std > 1000000:
+                #     t1_std = 110023
+                # t1_std = t1_std / 10
+            processed_result_exp[metric_name]['exp'][exp_idx] = t1_std
             metric_name = 't2-mean'
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
-            t2 = np.nanmean(np.array(base_result['gof'].statistic['t2'])).item()
+            t2 = np.array(base_result['gof'].statistic['t2'])
+            valid_mask = ~(np.isinf(t2)| np.isnan(t2))
+            t2 = t2[valid_mask]
+            if len(t2) == 0:
+                t2 = np.finfo(np.float32).max
+            else:
+                t2 = np.mean(t2).item()
             processed_result_exp[metric_name]['exp'][exp_idx] = t2
             metric_name = 't2-std'
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
-            t2 = np.nanstd(np.array(base_result['gof'].statistic['t2'])).item()
-            processed_result_exp[metric_name]['exp'][exp_idx] = t2
+            t2 = np.array(base_result['gof'].statistic['t2'])
+            valid_mask = ~(np.isinf(t2)| np.isnan(t2))
+            t2 = t2[valid_mask]
+            if len(t2) == 0:
+                t2_std = 0
+            else:
+                t2_std = np.std(t2).item()
+            processed_result_exp[metric_name]['exp'][exp_idx] = t2_std
             num_trials_roc = 100
             metric_name = 'fpr'
             if metric_name not in processed_result_history:
