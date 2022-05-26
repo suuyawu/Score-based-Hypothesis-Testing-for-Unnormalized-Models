@@ -268,7 +268,7 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
             t1 = np.array(base_result['gof'].statistic['t1'])
-            valid_mask = ~(np.isinf(t1)| np.isnan(t1))
+            valid_mask = ~(np.isinf(t1) | np.isnan(t1))
             t1 = t1[valid_mask]
             if len(t1) == 0:
                 t1 = np.finfo(np.float32).min
@@ -281,7 +281,7 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
             t1 = np.array(base_result['gof'].statistic['t1'])
-            valid_mask = ~(np.isinf(t1)| np.isnan(t1))
+            valid_mask = ~(np.isinf(t1) | np.isnan(t1))
             t1 = t1[valid_mask]
             if len(t1) == 0:
                 t1_std = 0
@@ -295,7 +295,7 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
             t2 = np.array(base_result['gof'].statistic['t2'])
-            valid_mask = ~(np.isinf(t2)| np.isnan(t2))
+            valid_mask = ~(np.isinf(t2) | np.isnan(t2))
             t2 = t2[valid_mask]
             if len(t2) == 0:
                 t2 = np.finfo(np.float32).max
@@ -306,7 +306,7 @@ def extract_result(control, model_tag, processed_result_exp, processed_result_hi
             if metric_name not in processed_result_exp:
                 processed_result_exp[metric_name] = {'exp': [None for _ in range(num_experiments)]}
             t2 = np.array(base_result['gof'].statistic['t2'])
-            valid_mask = ~(np.isinf(t2)| np.isnan(t2))
+            valid_mask = ~(np.isinf(t2) | np.isnan(t2))
             t2 = t2[valid_mask]
             if len(t2) == 0:
                 t2_std = 0
@@ -687,33 +687,6 @@ def make_vis_roc(df, vis_mode):
         plt.savefig(fig_path, dpi=dpi, bbox_inches='tight', pad_inches=0)
         plt.close(fig_name)
     return
-
-
-def roc_plot(scores, labels, save_path, title):
-    """
-    roc curve
-    input:
-      scores=[[id_score1, ood_score1], [id_score2, ood_score2], ...]
-      labels = [label1, label2, ...]
-    """
-    from sklearn.metrics import roc_curve, auc
-
-    for i, score in enumerate(scores):
-        score_id, score_ood = score[0], score[1]
-        y_true = np.array([0] * len(score_id) + [1] * len(score_ood))
-        score_arr = np.append(score_id, score_ood)
-        fpr, tpr, _ = roc_curve(y_true, score_arr, pos_label=1)
-        roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, label=labels[i] + "(area = %0.2f)" % roc_auc)
-    plt.plot([0, 1], [0, 1], linestyle="--")
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title(title)
-    plt.legend(loc="lower right")
-    plt.savefig(save_path + '_roc.png')
-    plt.close()
 
 
 if __name__ == '__main__':
