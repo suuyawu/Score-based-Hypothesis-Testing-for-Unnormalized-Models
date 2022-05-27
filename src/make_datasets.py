@@ -56,7 +56,7 @@ if __name__ == "__main__":
             logweight = cfg['gmm']['logweight']
             # ptb_mean = [0, 0.1, 1]
             ptb_mean = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9,
-                             0.95, 1, 2]
+                        0.95, 1, 2]
             for i in range(len(ptb_mean)):
                 ptb_mean_i = float(ptb_mean[i])
                 ptb_logvar = float(0)
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                 save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
             # ptb_logvar = [0, 0.1, 1]
             ptb_logvar = [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.85, 0.9,
-                             0.95, 1, 2]
+                          0.95, 1, 2]
             for i in range(len(ptb_logvar)):
                 ptb_mean = float(0)
                 ptb_logvar_i = float(ptb_logvar[i])
@@ -105,6 +105,19 @@ if __name__ == "__main__":
                 ptb_W_i = float(ptb_W[i])
                 params_i = {'num_trials': num_trials, 'num_samples': num_samples, 'W': W, 'v': v, 'h': h,
                             'num_iters': num_iters, 'ptb_W': ptb_W_i}
+                dataset = fetch_dataset(data_name, params_i)
+                footprint = make_footprint(params_i)
+                save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))
+        elif data_name == 'EXP':
+            power = cfg['exp']['power']
+            tau = cfg['exp']['tau']
+            num_dims = cfg['exp']['num_dims']
+            # ptb_W = [0, 0.0001, 0.005, 0.01, 0.02]
+            ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+            for i in range(len(ptb_tau)):
+                ptb_W_i = float(ptb_tau[i])
+                params_i = {'num_trials': num_trials, 'num_samples': num_samples, 'power': power, 'tau': tau,
+                            'num_dims': num_dims}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))

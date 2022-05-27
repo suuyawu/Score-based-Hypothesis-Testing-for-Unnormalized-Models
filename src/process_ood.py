@@ -10,7 +10,7 @@ from collections import defaultdict
 from sklearn.metrics import roc_curve, auc
 
 result_path = os.path.join('output', 'result')
-save_format = 'png'
+save_format = 'pdf'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
@@ -240,8 +240,8 @@ def make_vis_ood(df, vis_mode):
                     t2_1 = df[df_name_t2_1].loc[num_alter_samples]
                     ax_2.hist(t1_1, label=label_list[null_label], alpha=0.8, bins=20)
                     ax_2.hist(t2_1, label=label_list[int(label_idx)], alpha=0.8, bins=20)
-                    ax_2.set_xlabel('Frequency', fontsize=fontsize['label'])
-                    ax_2.set_ylabel('Test Statistic', fontsize=fontsize['label'])
+                    ax_2.set_xlabel('Test Statistic', fontsize=fontsize['label'])
+                    ax_2.set_ylabel('Frequency', fontsize=fontsize['label'])
                     ax_2.xaxis.set_tick_params(labelsize=fontsize['ticks'])
                     ax_2.yaxis.set_tick_params(labelsize=fontsize['ticks'])
                     ax_2.set_title('(b) $n=1$', fontsize=fontsize['label'])
@@ -252,8 +252,8 @@ def make_vis_ood(df, vis_mode):
                     t2_15 = df[df_name_t2_15].loc[num_alter_samples]
                     ax_3.hist(t1_15, label=label_list[null_label], alpha=0.8, bins=20)
                     ax_3.hist(t2_15, label=label_list[int(label_idx)], alpha=0.8, bins=20)
-                    ax_3.set_xlabel('Frequency', fontsize=fontsize['label'])
-                    ax_3.set_ylabel('Test Statistic', fontsize=fontsize['label'])
+                    ax_3.set_xlabel('Test Statistic', fontsize=fontsize['label'])
+                    ax_3.set_ylabel('Frequency', fontsize=fontsize['label'])
                     ax_3.xaxis.set_tick_params(labelsize=fontsize['ticks'])
                     ax_3.yaxis.set_tick_params(labelsize=fontsize['ticks'])
                     ax_3.set_title('(c) $n=10$', fontsize=fontsize['label'])
