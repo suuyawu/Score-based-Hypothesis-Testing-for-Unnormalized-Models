@@ -4,6 +4,7 @@ import os
 
 os.environ['OMP_NUM_THREADS'] = '1'
 import time
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import models
@@ -40,6 +41,8 @@ def runExperiment():
     torch.cuda.manual_seed(cfg['seed'])
     params = make_params(cfg['data_name'])
     dataset = fetch_dataset(cfg['data_name'], params)
+    # print(len(dataset['test']))
+    # exit()
     data_loader = make_data_loader(dataset, 'gof')
     gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
     metric = Metric(cfg['data_name'], {'test': ['Power-t1', 'Power-t2']})
@@ -75,6 +78,13 @@ def make_params(data_name):
         ptb_W = float(cfg['ptb'])
         params = {'num_trials': cfg['num_trials'], 'num_samples': cfg['num_samples'], 'W': W, 'v': v, 'h': h,
                   'num_iters': num_iters, 'ptb_W': ptb_W}
+    elif data_name == 'EXP':
+        power = cfg['exp']['power']
+        tau = cfg['exp']['tau']
+        num_dims = cfg['exp']['num_dims']
+        ptb_tau = float(cfg['ptb'])
+        params = {'num_trials': cfg['num_trials'], 'num_samples': cfg['num_samples'], 'power': power, 'tau': tau,
+                  'num_dims': num_dims, 'ptb_tau': ptb_tau}
     else:
         raise ValueError('Not valid data name')
     footprint = make_footprint(params)
@@ -92,7 +102,7 @@ def test(data_loader, gof, metric, logger):
         gof.update(output)
         evaluation = metric.evaluate(metric.metric_name['test'], input, output)
         logger.append(evaluation, 'test', 1)
-        if i % int((len(data_loader) * cfg['log_interval'])) == 0:
+        if i % np.ceil((len(data_loader) * cfg['log_interval'])) == 0:
             batch_time = (time.time() - start_time) / (i + 1)
             exp_finished_time = datetime.timedelta(seconds=round(batch_time * (len(data_loader) - i - 1)))
             info = {'info': ['Model: {}'.format(cfg['model_tag']),

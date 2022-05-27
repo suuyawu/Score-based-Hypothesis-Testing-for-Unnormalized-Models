@@ -15,42 +15,32 @@ def unnormalized_pdf_exp_nquad(*x):
 class EXP(nn.Module):
     def __init__(self, power, tau, num_dims):
         super().__init__()
+        self.normalization_constant = None
         self.reset(power, tau, num_dims)
 
     def reset(self, power, tau, num_dims):
-        self.power = power
+        self.register_buffer('power', power)
         self.tau = nn.Parameter(tau)
-        self.num_dims = num_dims
+        self.register_buffer('num_dims', num_dims)
         self.params = {'power': power, 'tau': tau, 'num_dims': num_dims}
-        self.normalization_constant = integrate.nquad(unnormalized_pdf_exp_nquad, [[-np.infty, np.infty]] * num_dims,
-                                                      args=(power, tau))
+        self.normalization_constant = integrate.nquad(unnormalized_pdf_exp_nquad,
+                                                      [[-np.infty, np.infty]] * num_dims.item(),
+                                                      args=(power.cpu().numpy(), tau.data.cpu().numpy()))
         return
 
     def pdf(self, x):
-        if self.d == 1:
-            x = x.squeeze(-1)
-        pdf_ = self.model.log_prob(x).exp()
+        pdf_ = self.normalization_constant ** (-1) * torch.exp(-(self.tau * (x ** self.power).sum(-1)))
         return pdf_
 
     def score(self, x):
-        if self.d == 1:
-            score_ = -1 * torch.matmul((x - self.mean), self.logvar.exp() ** (-1)).view(-1, 1)
-        else:
-            score_ = -1 * torch.matmul((x - self.mean), torch.linalg.inv(self.logvar.exp()))
+        score_ = -self.power * self.tau * (x ** (self.power - 1))
         return score_
 
     def hscore(self, x):
-        mean = self.mean
-        if self.d == 1:
-            invcov = self.logvar.exp() ** (-1)
-            t1 = 0.5 * ((x - mean) * invcov * invcov).matmul((x - mean).transpose(-1, -2))
-            t2 = - invcov
-        else:
-            invcov = torch.linalg.inv(self.logvar.exp())
-            t1 = 0.5 * (x - mean).matmul(invcov).matmul(invcov).matmul((x - mean).transpose(-1, -2))
-            t2 = - invcov.diagonal().sum()
-        t1 = t1.diagonal(dim1=-2, dim2=-1)
-        hscore_ = t1 + t2
+        # self.power >= 2
+        term1 = self.score(x)
+        term2 = -(self.power * (self.power - 1)) * self.tau * (x ** (self.power - 2))
+        hscore_ = (0.5 * term1 ** 2 + term2).sum(-1)
         return hscore_
 
     def fit(self, x):

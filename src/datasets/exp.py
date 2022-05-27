@@ -14,10 +14,10 @@ class EXP(Dataset):
         self.root = os.path.expanduser(root)
         self.num_trials = params['num_trials']
         self.num_samples = params['num_samples']
-        self.tau = params['mean']
-        self.ptb_tau = params['ptb_tau']
-        self.num_dims = params['num_dims']
         self.power = params['power']
+        self.tau = params['tau']
+        self.num_dims = params['num_dims']
+        self.ptb_tau = params['ptb_tau']
         self.footprint = make_footprint(params)
         split_name = '{}_{}'.format(self.data_name, self.footprint)
         if not check_exists(os.path.join(self.processed_folder, split_name)):
@@ -28,8 +28,8 @@ class EXP(Dataset):
 
     def __getitem__(self, index):
         null, alter = torch.tensor(self.null[index]), torch.tensor(self.alter[index])
-        null_param = {'tau': self.tau}
-        alter_param = {'tau': torch.tensor(self.meta['tau'][index])}
+        null_param = {'power': self.power, 'tau': self.tau, 'num_dims': self.num_dims}
+        alter_param = {'power': self.power, 'tau': torch.tensor(self.meta['tau'][index]), 'num_dims': self.num_dims}
         input = {'null': null, 'alter': alter, 'null_param': null_param, 'alter_param': alter_param}
         return input
 
@@ -67,17 +67,17 @@ class EXP(Dataset):
 
         total_samples = self.num_trials * self.num_samples
         d = self.num_dims
-
         null_nuts = NUTS(potential_fn=lambda x: -torch.log(unnormalized_pdf_normal(x, self.power, self.tau)))
         mcmc = MCMC(null_nuts, num_samples=total_samples, initial_params={'u': torch.zeros((d,))})
         mcmc.run()
         null = mcmc.get_samples()['u']
         null = null.view(self.num_trials, self.num_samples, -1)
         alter_tau = self.tau + self.ptb_tau * torch.ones((self.num_trials, *self.tau.size()))
-        alter_nuts = NUTS(potential_fn=lambda x: -torch.log(unnormalized_pdf_normal(x, self.power, alter_tau)))
+        alter_nuts = NUTS(potential_fn=lambda x: -torch.log(unnormalized_pdf_normal(x, self.power, alter_tau[0])))
         mcmc = MCMC(alter_nuts, num_samples=total_samples, initial_params={'u': torch.zeros((d,))})
         mcmc.run()
         alter = mcmc.get_samples()['u']
+        alter = alter.view(self.num_trials, self.num_samples, -1)
         null, alter = null.numpy(), alter.numpy()
         meta = {'tau': alter_tau.numpy()}
         return null, alter, meta

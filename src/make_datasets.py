@@ -22,7 +22,8 @@ if __name__ == "__main__":
     num_samples = cfg['num_samples']
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
-    data_names = ['MVN', 'GMM', 'RBM']
+    # data_names = ['MVN', 'GMM', 'RBM', 'EXP']
+    data_names = ['EXP']
     for m in range(len(data_names)):
         data_name = data_names[m]
         if data_name == 'MVN':
@@ -112,12 +113,13 @@ if __name__ == "__main__":
             power = cfg['exp']['power']
             tau = cfg['exp']['tau']
             num_dims = cfg['exp']['num_dims']
-            # ptb_W = [0, 0.0001, 0.005, 0.01, 0.02]
-            ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+            # ptb_tau = [2]
+            ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+                       2.0]
             for i in range(len(ptb_tau)):
-                ptb_W_i = float(ptb_tau[i])
+                ptb_tau_i = float(ptb_tau[i])
                 params_i = {'num_trials': num_trials, 'num_samples': num_samples, 'power': power, 'tau': tau,
-                            'num_dims': num_dims}
+                            'num_dims': num_dims, 'ptb_tau': ptb_tau_i}
                 dataset = fetch_dataset(data_name, params_i)
                 footprint = make_footprint(params_i)
                 save(params_i, os.path.join('output', 'params', data_name, '{}_{}.pkl'.format(data_name, footprint)))

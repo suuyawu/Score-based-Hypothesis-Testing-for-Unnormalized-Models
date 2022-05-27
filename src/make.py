@@ -129,9 +129,10 @@ def main():
                                        control_name)
             controls = controls_W
         elif data == 'EXP':
-            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'hst-b-g']
             ptb = []
-            ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+            ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+                       2.0]
             for i in range(len(ptb_tau)):
                 ptb_W_i = float(ptb_tau[i])
                 ptb_i = '{}'.format(ptb_W_i)
@@ -198,10 +199,10 @@ def main():
                                        control_name)
             controls = controls_W
         elif data == 'EXP':
-            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'lrt-b-e', 'hst-b-g', 'hst-b-e']
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'hst-b-g']
             data_size = [5, 10, 20, 30, 40, 50, 80, 150, 200]
             data_size = [str(int(x)) for x in data_size]
-            ptb_tau = float(0.3)
+            ptb_tau = float(1)
             ptb = ['{}'.format(ptb_tau)]
             control_name = [[[data], test_mode, ptb, data_size, ['0']]]
             controls_tau = make_controls(script_name, init_seeds, world_size, num_experiments, resume_mode,

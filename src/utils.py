@@ -127,11 +127,14 @@ def process_control():
         cfg['alter_num_samples'] = int(cfg['control']['alter_num_samples'])
     if 'alter_noise' in cfg['control']:
         cfg['alter_noise'] = float(cfg['control']['alter_noise'])
-    cfg['num_trials'] = 100
+    # cfg['num_trials'] = 100
+    # cfg['num_samples'] = 10000
+    cfg['num_trials'] = 10
     cfg['num_samples'] = 10000
     cfg['gof'] = {}
     cfg['gof']['batch_size'] = {'test': 1}
     cfg['gof']['shuffle'] = {'test': False}
+    cfg['gof']['drop_last'] = {'test': False}
     if cfg['data_name'] in ['KDDCUP99']:
         data_shape = {'MNIST': [1, 28, 28], 'FashionMNIST': [1, 28, 28], 'SVHN': [3, 32, 32], 'CIFAR10': [3, 32, 32],
                       'CIFAR100': [3, 32, 32], 'KDDCUP99': [39]}
@@ -150,7 +153,7 @@ def process_control():
         h = torch.randn(dim_h, generator=generator)
         cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1)}
     else:
-        d = 2
+        d = 1
         if d == 1:
             cfg['mvn'] = {'mean': torch.tensor([0.]), 'logvar': torch.tensor([1.])}
             cfg['gmm'] = {'mean': torch.tensor([[0.], [2.], [4.]]),
@@ -165,6 +168,7 @@ def process_control():
             v = torch.randn(dim_v, generator=generator)
             h = torch.randn(dim_h, generator=generator)
             cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(100)}
+            cfg['exp'] = {'power': torch.tensor([4.]), 'tau': torch.tensor([1.]), 'num_dims': torch.tensor([1])}
         else:
             cfg['mvn'] = {'mean': torch.tensor([0., 0.]), 'logvar': torch.tensor([[0., -0.3], [-0.3, 0.]])}
             # cfg['gmm'] = {'mean': torch.tensor([[0., 0.], [4., 0.], [0., 4.]]),
@@ -189,7 +193,7 @@ def process_control():
             v = torch.randn(dim_v, generator=generator)
             h = torch.randn(dim_h, generator=generator)
             cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1000)}
-            cfg['exp'] = {'power': 4, 'tau': torch.tensor([1.]), 'num_dims': 4}
+            cfg['exp'] = {'power': torch.tensor([4.]), 'tau': torch.tensor([1.]), 'num_dims': torch.tensor([4])}
     cfg['hst'] = {}
     cfg['hst']['optimizer_name'] = 'Adam'
     cfg['hst']['lr'] = 1e-3
@@ -198,6 +202,7 @@ def process_control():
     cfg['hst']['nesterov'] = True
     cfg['hst']['weight_decay'] = 0
     cfg['hst']['num_iters'] = 20
+    cfg['hst']['drop_last'] = {'train': False, 'test': False}
     cfg['num_bootstrap'] = 1000
     cfg['alpha'] = 0.05
     cfg['ood'] = {}

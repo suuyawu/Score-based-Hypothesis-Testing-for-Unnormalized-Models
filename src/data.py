@@ -23,6 +23,8 @@ def fetch_dataset(data_name, params=None, verbose=True):
     elif data_name in ['KDDCUP99']:
         dataset['train'] = datasets.KDDCUP99(root, 'train')
         dataset['test'] = datasets.KDDCUP99(root, 'test')
+    elif data_name in ['EXP']:
+        dataset['test'] = datasets.EXP(root, **params)
     else:
         raise ValueError('Not valid dataset name')
     if verbose:
