@@ -41,8 +41,6 @@ def runExperiment():
     torch.cuda.manual_seed(cfg['seed'])
     params = make_params(cfg['data_name'])
     dataset = fetch_dataset(cfg['data_name'], params)
-    # print(len(dataset['test']))
-    # exit()
     data_loader = make_data_loader(dataset, 'gof')
     gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
     metric = Metric(cfg['data_name'], {'test': ['Power-t1', 'Power-t2']})

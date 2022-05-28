@@ -23,9 +23,10 @@ class EXP(nn.Module):
         self.tau = nn.Parameter(tau)
         self.register_buffer('num_dims', num_dims)
         self.params = {'power': power, 'tau': tau, 'num_dims': num_dims}
-        self.normalization_constant = integrate.nquad(unnormalized_pdf_exp_nquad,
-                                                      [[-np.infty, np.infty]] * num_dims.item(),
-                                                      args=(power.cpu().numpy(), tau.data.cpu().numpy()))
+        if 'lrt' in cfg['test_mode']:
+            self.normalization_constant = integrate.nquad(unnormalized_pdf_exp_nquad,
+                                                          [[-np.infty, np.infty]] * num_dims.item(),
+                                                          args=(power.cpu().numpy(), tau.data.cpu().numpy()))[0]
         return
 
     def pdf(self, x):

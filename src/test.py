@@ -3,6 +3,7 @@ from data import fetch_dataset, make_data_loader
 import torch
 import models
 import numpy as np
+from pyro.infer import MCMC, NUTS
 
 # if __name__ == "__main__":
 #     logweight = torch.log(torch.tensor([0.2, 0.8]))
@@ -73,3 +74,42 @@ import numpy as np
 # if __name__ == "__main__":
 #     ptb = np.linspace(0, 0.1, 20).tolist()
 #     print(ptb)
+
+# def unnormalized_pdf_exp(x, power, tau):
+#     return torch.exp(-tau * (x['u'] ** power).sum())
+#
+#
+
+
+
+# def make_data_exp(power, tau, num_samples, num_dims):
+#     nuts = NUTS(potential_fn=lambda x: -torch.log(unnormalized_pdf_normal(x, power, tau)))
+#     mcmc = MCMC(nuts, num_samples=num_samples, initial_params={'u': torch.zeros((num_dims,))})
+#     mcmc.run()
+#     samples = mcmc.get_samples()['u']
+#     return samples
+#
+#
+# def make_dataset(power, tau, num_samples, num_dims):
+#     nuts = NUTS(potential_fn=lambda x: -torch.log(unnormalized_pdf_normal(x, power, tau)))
+#     mcmc = MCMC(nuts, num_samples=num_samples, initial_params={'u': torch.zeros((num_dims,))})
+#     mcmc.run()
+#     samples = mcmc.get_samples()['u']
+#     return samples
+
+# def unnormalized_pdf_normal(x, mean, std):
+#     return torch.exp(-0.5 * ((x['u'] - mean) / std) ** 2.)
+#
+# if __name__ == "__main__":
+#     mean = 10
+#     std = 2
+#     nuts = NUTS(potential_fn=lambda x: -torch.log(unnormalized_pdf_normal(x, mean, std)))
+#     mcmc = MCMC(nuts, num_samples=1000, initial_params={'u': torch.zeros((1,))})
+#     mcmc.run()
+#     samples = mcmc.get_samples()['u']
+#     print(samples.mean(), samples.std())
+
+# def unnormalized_pdf_exp_nquad(*x):
+#     x_ = np.array(x[:-2])
+#     power, tau = x[-2], x[-1]
+#     return np.exp(-tau * (x_ ** power).sum())

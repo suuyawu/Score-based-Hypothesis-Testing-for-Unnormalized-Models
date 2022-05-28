@@ -10,7 +10,7 @@ from collections import defaultdict
 from sklearn.metrics import roc_curve, auc
 
 result_path = os.path.join('output', 'result')
-save_format = 'pdf'
+save_format = 'png'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
@@ -99,6 +99,18 @@ def make_control_list(mode, data):
             control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
             controls_W = make_controls(control_name)
             controls = controls_W
+        elif data == 'EXP':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'hst-b-g']
+            ptb = []
+            ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+                       2.0]
+            for i in range(len(ptb_tau)):
+                ptb_tau_i = float(ptb_tau[i])
+                ptb_i = '{}'.format(ptb_tau_i)
+                ptb.append(ptb_i)
+            control_name = [[[data], test_mode, ptb, ['100'], ['0']]]
+            controls_tau = make_controls(control_name)
+            controls = controls_tau
         else:
             raise ValueError('not valid data')
     elif mode == 'ds':
@@ -149,6 +161,15 @@ def make_control_list(mode, data):
             control_name = [[[data], test_mode, ptb, data_size, ['0']]]
             controls_W = make_controls(control_name)
             controls = controls_W
+        elif data == 'EXP':
+            test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'hst-b-g']
+            data_size = [5, 10, 20, 30, 40, 50, 80, 150, 200]
+            data_size = [str(int(x)) for x in data_size]
+            ptb_tau = float(1)
+            ptb = ['{}'.format(ptb_tau)]
+            control_name = [[[data], test_mode, ptb, data_size, ['0']]]
+            controls_tau = make_controls(control_name)
+            controls = controls_tau
         else:
             raise ValueError('Not valid data')
     elif mode == 'noise':
@@ -213,8 +234,8 @@ def main():
     # mode = ['ptb']
     # data_name = ['MVN', 'GMM', 'RBM']
     # mode = ['ptb']
-    data_name = ['MVN', 'RBM']
-    # data_name = ['MVN']
+    # data_name = ['MVN', 'RBM']
+    data_name = ['EXP']
     controls = []
     for i in range(len(mode)):
         mode_i = mode[i]
@@ -231,13 +252,11 @@ def main():
     extract_processed_result(extracted_processed_result_history, processed_result_history, [])
     df_exp = make_df_result(extracted_processed_result_exp, 'exp', write)
     df_history = make_df_result(extracted_processed_result_history, 'history', write)
-    make_vis(df_history, 'ptb')
-    make_vis(df_history, 'ds')
-    # make_vis(df_history, 'noise')
+    # make_vis(df_history, 'ptb')
+    # make_vis(df_history, 'ds')
     # make_vis_statistic(df_exp, 'ptb')
-    # make_vis_statistic(df_exp, 'ds')
-    # make_vis_statistic(df_exp, 'noise')
     # make_vis_roc(df_history, 'ptb')
+    make_vis_roc(df_history, 'ds')
     return
 
 
@@ -440,6 +459,7 @@ def make_vis(df, vis_mode):
     label_loc_dict = {'Power': 'lower right', 't1': 'lower right', 't2': 'lower right'}
     xlabel_dict = {'ptb': 'Perturbation Magnitude $\sigma_{ptb}$', 'ds': 'Sample Size $n$',
                    'noise': 'Noise Magnitude $\sigma_{s}$'}
+    exp_xlabel_dict = {'ptb': '$\\tau_{ptb}$', 'ds': 'Sample Size $n$'}
     fontsize = {'legend': 14, 'label': 16, 'ticks': 16}
     figsize = (10, 4)
     capsize = 3
@@ -462,6 +482,7 @@ def make_vis(df, vis_mode):
         else:
             raise ValueError('Not valid mode')
         if condition:
+            data_name = df_name_list[0]
             test_mode = df_name_list[1]
             df_name_t2 = df_name
             x_t2 = df[df_name_t2].index.values
@@ -499,14 +520,18 @@ def make_vis(df, vis_mode):
             label = test_mode
             ax_1.errorbar(x_t2, y_t2_mean, yerr=y_t2_err, color=color_dict[label], linestyle=linestyle_dict[label],
                           label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
-            ax_1.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
+            if data_name == 'EXP':
+                xlabel = exp_xlabel_dict[vis_mode]
+            else:
+                xlabel = xlabel_dict[vis_mode]
+            ax_1.set_xlabel(xlabel, fontsize=fontsize['label'])
             ax_1.set_ylabel('Power', fontsize=fontsize['label'])
             ax_1.xaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_1.yaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_1.legend(loc=label_loc_dict['t1'], fontsize=fontsize['legend'])
             ax_2.errorbar(x_t1, y_t1_mean, yerr=y_t1_err, color=color_dict[label], linestyle=linestyle_dict[label],
                           label=label_dict[label], marker=marker_dict[label], capsize=capsize, capthick=capthick)
-            ax_2.set_xlabel(xlabel_dict[vis_mode], fontsize=fontsize['label'])
+            ax_2.set_xlabel(xlabel, fontsize=fontsize['label'])
             ax_2.set_ylabel('Type I Error Rate', fontsize=fontsize['label'])
             ax_2.xaxis.set_tick_params(labelsize=fontsize['ticks'])
             ax_2.yaxis.set_tick_params(labelsize=fontsize['ticks'])
@@ -634,8 +659,9 @@ def make_vis_roc(df, vis_mode):
     figsize = (5, 4)
     fig = {}
     ax_dict_1 = {}
-    pivot_ptb_dict = {'MVN-x-0.0': '0.5', 'MVN-0.0-x': '0.5', 'GMM-x-0.0-0.0': '0.5', 'GMM-0.0-x-0.0': '0.5',
-                      'GMM-0.0-0.0-x': '0.5', 'RBM-x': '0.01'}
+    ptb_pivot_ptb_dict = {'MVN-x-0.0': '0.5', 'MVN-0.0-x': '0.5', 'GMM-x-0.0-0.0': '0.5', 'GMM-0.0-x-0.0': '0.5',
+                          'GMM-0.0-0.0-x': '0.5', 'RBM-x': '0.01', 'EXP-x': '1.0'}
+    ds_pivot_ptb_dict = {'MVN-x': '50', 'GMM-x': '50', 'RBM-x': '50', 'EXP-x': '50'}
     for df_name in df:
         df_name_list = df_name.split('_')
         ptb, alter_num_samples, alter_noise = df_name_list[2], df_name_list[3], df_name_list[4]
@@ -651,7 +677,12 @@ def make_vis_roc(df, vis_mode):
             raise ValueError('Not valid mode')
         if condition:
             test_mode = df_name_list[1]
-            pivot_index = pivot_ptb_dict['{}-{}'.format(df_name_list[0], df_name_list[2])]
+            if vis_mode == 'ptb':
+                pivot_index = ptb_pivot_ptb_dict['{}-{}'.format(df_name_list[0], df_name_list[2])]
+            elif vis_mode == 'ds':
+                pivot_index = ds_pivot_ptb_dict['{}-{}'.format(df_name_list[0], df_name_list[3])]
+            else:
+                raise ValueError('Not valid mode')
             df_name_fpr = df_name
             fpr = df[df_name_fpr].loc[pivot_index].to_numpy().reshape(-1)
             fpr = fpr[~np.isnan(fpr)]
