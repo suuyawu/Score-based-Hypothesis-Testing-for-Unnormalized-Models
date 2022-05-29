@@ -153,7 +153,7 @@ def process_control():
         h = torch.randn(dim_h, generator=generator)
         cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1)}
     else:
-        d = 1
+        d = 2
         if d == 1:
             cfg['mvn'] = {'mean': torch.tensor([0.]), 'logvar': torch.tensor([1.])}
             cfg['gmm'] = {'mean': torch.tensor([[0.], [2.], [4.]]),
@@ -193,7 +193,7 @@ def process_control():
             v = torch.randn(dim_v, generator=generator)
             h = torch.randn(dim_h, generator=generator)
             cfg['rbm'] = {'W': W, 'v': v, 'h': h, 'num_iters': int(1000)}
-            cfg['exp'] = {'power': torch.tensor([4.]), 'tau': torch.tensor([1.]), 'num_dims': torch.tensor([4])}
+            cfg['exp'] = {'power': torch.tensor([4.]), 'tau': torch.tensor([1.]), 'num_dims': torch.tensor([3])}
     cfg['hst'] = {}
     cfg['hst']['optimizer_name'] = 'Adam'
     cfg['hst']['lr'] = 1e-3

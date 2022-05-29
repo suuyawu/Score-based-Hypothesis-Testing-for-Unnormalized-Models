@@ -97,6 +97,7 @@ if __name__ == "__main__":
     cfg['control']['model_name'] = 'exp'
     cfg['device'] = 'cpu'
     process_control()
+    cfg['num_trials'] = 1
     run_exp_time()
     result = load(os.path.join('output', 'result', 'exp_time.pt'))
     num_dims_list = result['num_dims_list']

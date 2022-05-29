@@ -63,7 +63,34 @@ class EXP(Dataset):
 
     def make_data(self):
         def unnormalized_pdf_normal(x, power, tau):
-            return torch.exp(-tau * (x['u'] ** power).sum())
+            d_ = len(x['u'])
+            if d_ == 1:
+                u_pdf = torch.exp(-tau * (x['u'] ** power))
+            elif d_ == 2:
+                u_pdf = torch.exp(-tau * (x['u'][0] ** power +
+                                          x['u'][1] ** power +
+                                          (x['u'][0] * x['u'][1]) ** (power / 2)))
+            elif d_ == 3:
+                u_pdf = torch.exp(-tau * (x['u'][0] ** power +
+                                          x['u'][1] ** power +
+                                          x['u'][2] ** power +
+                                          (x['u'][0] * x['u'][1]) ** (power / 2) +
+                                          (x['u'][0] * x['u'][2]) ** (power / 2) +
+                                          (x['u'][1] * x['u'][2]) ** (power / 2)))
+            elif d_ == 4:
+                u_pdf = torch.exp(-tau * (x['u'][0] ** power +
+                                          x['u'][1] ** power +
+                                          x['u'][2] ** power +
+                                          x['u'][3] ** power +
+                                          (x['u'][0] * x['u'][1]) ** (power / 2) +
+                                          (x['u'][0] * x['u'][2]) ** (power / 2) +
+                                          (x['u'][0] * x['u'][3]) ** (power / 2) +
+                                          (x['u'][1] * x['u'][2]) ** (power / 2) +
+                                          (x['u'][1] * x['u'][3]) ** (power / 2) +
+                                          (x['u'][2] * x['u'][3]) ** (power / 2)))
+            else:
+                raise ValueError('Not valid d')
+            return u_pdf
 
         total_samples = self.num_trials * self.num_samples
         d = self.num_dims
