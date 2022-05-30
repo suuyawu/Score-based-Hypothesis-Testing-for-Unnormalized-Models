@@ -21,8 +21,8 @@ def run_exp_time():
     num_samples = 10000
     power = torch.tensor([4.])
     tau = torch.tensor([1.])
-    ptb_tau = torch.tensor([1.])
-    # num_dims_list = [1, 2, 3, 4, 5, 6]
+    ptb_tau = float(1.0)
+    # num_dims_list = [1, 2, 3, 4]
     num_dims_list = [1, 2, 3]
     time_lrt = []
     time_hst = []
@@ -34,20 +34,24 @@ def run_exp_time():
         dataset = fetch_dataset(cfg['data_name'], params_i)
         data_loader = make_data_loader(dataset, 'gof')
         cfg['test_mode'] = 'lrt-b-g'
-        s = time.time()
-        gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
-        for i, input in enumerate(data_loader['test']):
+        time_lrt_i = []
+        for j, input in enumerate(data_loader['test']):
+            s = time.time()
+            gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
             input = collate(input)
             gof.test(input)
-        time_lrt_i = time.time() - s
-        cfg['test_mode'] = 'hst-b-g'
-        s = time.time()
-        gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
-        for i, input in enumerate(data_loader['test']):
-            input = collate(input)
-            gof.test(input)
-        time_hst_i = time.time() - s
+            time_lrt_i_j = time.time() - s
+            time_lrt_i.append(time_lrt_i_j)
         time_lrt.append(time_lrt_i)
+        cfg['test_mode'] = 'hst-b-g'
+        time_hst_i = []
+        for j, input in enumerate(data_loader['test']):
+            s = time.time()
+            gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
+            input = collate(input)
+            gof.test(input)
+            time_hst_i_j = time.time() - s
+            time_hst_i.append(time_hst_i_j)
         time_hst.append(time_hst_i)
     result = {'num_dims_list': num_dims_list, 'time_lrt': time_lrt, 'time_hst': time_hst}
     save(result, os.path.join('output', 'result', 'exp_time.pt'))
@@ -66,14 +70,28 @@ def plot(num_dims_list, time_lrt, time_hst):
     label_loc_dict = {'time': 'upper left'}
     fontsize = {'legend': 12, 'label': 16, 'ticks': 16}
     figsize = (5, 4)
+    capsize = 3
+    capthick = 3
+    time_lrt = np.array(time_lrt)
+    time_hst = np.array(time_hst)
+    time_lrt_mean = time_lrt.mean(axis=-1)
+    time_lrt_std = time_lrt.std(axis=-1)
+    time_hst_mean = time_hst.mean(axis=-1)
+    time_hst_std = time_hst.std(axis=-1)
     fig = plt.figure(figsize=figsize)
     ax_1 = fig.add_subplot(111)
+    # label = 'lrt-b-g'
+    # ax_1.errorbar(num_dims_list, time_lrt_mean, yerr=time_lrt_std / 2, color=color_dict[label],
+    #               linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
+    # label = 'hst-b-g'
+    # ax_1.errorbar(num_dims_list, time_hst_mean, yerr=time_hst_std / 2, color=color_dict[label],
+    #               linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
     label = 'lrt-b-g'
-    ax_1.plot(num_dims_list, time_lrt, color=color_dict[label], linestyle=linestyle_dict[label],
-              label=label_dict[label], marker=marker_dict[label])
+    ax_1.plot(num_dims_list, time_lrt_mean, color=color_dict[label],
+                  linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
     label = 'hst-b-g'
-    ax_1.plot(num_dims_list, time_hst, color=color_dict[label], linestyle=linestyle_dict[label],
-              label=label_dict[label], marker=marker_dict[label])
+    ax_1.plot(num_dims_list, time_hst_mean, color=color_dict[label],
+                  linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
     ax_1.set_xlabel('Dimension', fontsize=fontsize['label'])
     ax_1.set_ylabel('CPU Time (s)', fontsize=fontsize['label'])
     ax_1.set_xticks(num_dims_list)
@@ -97,7 +115,6 @@ if __name__ == "__main__":
     cfg['control']['model_name'] = 'exp'
     cfg['device'] = 'cpu'
     process_control()
-    cfg['num_trials'] = 1
     run_exp_time()
     result = load(os.path.join('output', 'result', 'exp_time.pt'))
     num_dims_list = result['num_dims_list']

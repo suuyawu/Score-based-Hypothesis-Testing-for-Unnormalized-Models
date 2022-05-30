@@ -130,6 +130,7 @@ def process_control():
     # cfg['num_trials'] = 100
     # cfg['num_samples'] = 10000
     cfg['num_trials'] = 10
+    # cfg['num_trials'] = 1
     cfg['num_samples'] = 10000
     cfg['gof'] = {}
     cfg['gof']['batch_size'] = {'test': 1}

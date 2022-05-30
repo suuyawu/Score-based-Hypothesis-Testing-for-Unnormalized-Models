@@ -59,18 +59,143 @@ class EXP(nn.Module):
         return
 
     def pdf(self, x):
-        pdf_ = self.normalization_constant ** (-1) * torch.exp(-(self.tau * (x ** self.power).sum(-1)))
+        d = self.num_dims
+        if d == 1:
+            u_pdf = torch.exp(-self.tau * (x[:, 0] ** self.power))
+        elif d == 2:
+            u_pdf = torch.exp(-self.tau * (x[:, 0] ** self.power + x[:, 1] ** self.power +
+                                           (x[:, 0] * x[:, 1]) ** (self.power / 2)))
+        elif d == 3:
+            u_pdf = torch.exp(-self.tau * (x[:, 0] ** self.power +
+                                           x[:, 1] ** self.power +
+                                           x[:, 2] ** self.power +
+                                           (x[:, 0] * x[:, 1]) ** (self.power / 2) +
+                                           (x[:, 0] * x[:, 2]) ** (self.power / 2) +
+                                           (x[:, 1] * x[:, 2]) ** (self.power / 2)))
+        elif d == 4:
+            u_pdf = torch.exp(-self.tau * (x[:, 0] ** self.power +
+                                           x[:, 1] ** self.power +
+                                           x[:, 2] ** self.power +
+                                           x[:, 3] ** self.power +
+                                           (x[:, 0] * x[:, 1]) ** (self.power / 2) +
+                                           (x[:, 0] * x[:, 2]) ** (self.power / 2) +
+                                           (x[:, 0] * x[:, 3]) ** (self.power / 2) +
+                                           (x[:, 1] * x[:, 2]) ** (self.power / 2) +
+                                           (x[:, 1] * x[:, 3]) ** (self.power / 2) +
+                                           (x[:, 2] * x[:, 3]) ** (self.power / 2)))
+        else:
+            raise ValueError('Not valid d')
+        pdf_ = self.normalization_constant ** (-1) * u_pdf
         return pdf_
 
     def score(self, x):
-        score_ = -self.power * self.tau * (x ** (self.power - 1))
+        d = self.num_dims
+        if d == 1:
+            score_ = -self.power * self.tau * (x ** (self.power - 1))
+        elif d == 2:
+            dx_1 = - self.power * self.tau * (x[:, 0] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * (x[:, 0] ** (self.power / 2 - 1)) * (x[:, 1] ** (self.power / 2))
+            dx_2 = - self.power * self.tau * (x[:, 1] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * (x[:, 1] ** (self.power / 2 - 1)) * (x[:, 0] ** (self.power / 2))
+            score_ = torch.stack([dx_1, dx_2], dim=-1)
+        elif d == 3:
+            dx_1 = - self.power * self.tau * (x[:, 0] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 0] ** (self.power / 2 - 1) * x[:, 1] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 0] ** (self.power / 2 - 1) * x[:, 2] ** (self.power / 2)
+            dx_2 = - self.power * self.tau * (x[:, 1] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 1] ** (self.power / 2 - 1) * x[:, 0] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 1] ** (self.power / 2 - 1) * x[:, 2] ** (self.power / 2)
+            dx_3 = - self.power * self.tau * (x[:, 2] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 2] ** (self.power / 2 - 1) * x[:, 0] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 2] ** (self.power / 2 - 1) * x[:, 1] ** (self.power / 2)
+            score_ = torch.stack([dx_1, dx_2, dx_3], dim=-1)
+        elif d == 4:
+            dx_1 = - self.power * self.tau * (x[:, 0] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 0] ** (self.power / 2 - 1) * x[:, 1] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 0] ** (self.power / 2 - 1) * x[:, 2] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 0] ** (self.power / 2 - 1) * x[:, 3] ** (self.power / 2)
+            dx_2 = - self.power * self.tau * (x[:, 1] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 1] ** (self.power / 2 - 1) * x[:, 0] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 1] ** (self.power / 2 - 1) * x[:, 2] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 1] ** (self.power / 2 - 1) * x[:, 3] ** (self.power / 2)
+            dx_3 = - self.power * self.tau * (x[:, 2] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 2] ** (self.power / 2 - 1) * x[:, 0] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 2] ** (self.power / 2 - 1) * x[:, 1] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 2] ** (self.power / 2 - 1) * x[:, 3] ** (self.power / 2)
+            dx_4 = - self.power * self.tau * (x[:, 3] ** (self.power - 1)) - \
+                   (self.power / 2) * self.tau * x[:, 3] ** (self.power / 2 - 1) * x[:, 0] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 3] ** (self.power / 2 - 1) * x[:, 1] ** (self.power / 2) - \
+                   (self.power / 2) * self.tau * x[:, 3] ** (self.power / 2 - 1) * x[:, 2] ** (self.power / 2)
+            score_ = torch.stack([dx_1, dx_2, dx_3, dx_4], dim=-1)
+        else:
+            raise ValueError('Not valid d')
         return score_
 
     def hscore(self, x):
         # self.power >= 2
-        term1 = self.score(x)
-        term2 = -(self.power * (self.power - 1)) * self.tau * (x ** (self.power - 2))
-        hscore_ = (0.5 * term1 ** 2 + term2).sum(-1)
+        term_1 = self.score(x)
+        d = self.num_dims
+        if d == 1:
+            d2x_1 = -(self.power * (self.power - 1)) * self.tau * (x[:, 0] ** (self.power - 2))
+            term_2 = d2x_1
+        elif d == 2:
+            d2x_1 = -(self.power * (self.power - 1)) * self.tau * (x[:, 0] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 0] ** (self.power / 2 - 2) * \
+                    x[:, 1] ** (self.power / 2)
+            d2x_2 = -(self.power * (self.power - 1)) * self.tau * (x[:, 1] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 1] ** (self.power / 2 - 2) * \
+                    x[:, 0] ** (self.power / 2)
+            term_2 = d2x_1 + d2x_2
+        elif d == 3:
+            d2x_1 = -(self.power * (self.power - 1)) * self.tau * (x[:, 0] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 0] ** (self.power / 2 - 2) * \
+                    x[:, 1] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 0] ** (self.power / 2 - 2) * \
+                    x[:, 2] ** (self.power / 2)
+            d2x_2 = -(self.power * (self.power - 1)) * self.tau * (x[:, 1] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 1] ** (self.power / 2 - 2) * \
+                    x[:, 0] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 1] ** (self.power / 2 - 2) * \
+                    x[:, 2] ** (self.power / 2)
+            d2x_3 = -(self.power * (self.power - 1)) * self.tau * (x[:, 2] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 2] ** (self.power / 2 - 2) * \
+                    x[:, 0] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 2] ** (self.power / 2 - 2) * \
+                    x[:, 1] ** (self.power / 2)
+            term_2 = d2x_1 + d2x_2 + d2x_3
+        elif d == 4:
+            d2x_1 = -(self.power * (self.power - 1)) * self.tau * (x[:, 0] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 0] ** (self.power / 2 - 2) * \
+                    x[:, 1] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 0] ** (self.power / 2 - 2) * \
+                    x[:, 2] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 0] ** (self.power / 2 - 2) * \
+                    x[:, 3] ** (self.power / 2)
+            d2x_2 = -(self.power * (self.power - 1)) * self.tau * (x[:, 1] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 1] ** (self.power / 2 - 2) * \
+                    x[:, 0] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 1] ** (self.power / 2 - 2) * \
+                    x[:, 2] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 1] ** (self.power / 2 - 2) * \
+                    x[:, 3] ** (self.power / 2)
+            d2x_3 = -(self.power * (self.power - 1)) * self.tau * (x[:, 2] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 2] ** (self.power / 2 - 2) * \
+                    x[:, 0] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 2] ** (self.power / 2 - 2) * \
+                    x[:, 1] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 2] ** (self.power / 2 - 2) * \
+                    x[:, 3] ** (self.power / 2)
+            d2x_4 = -(self.power * (self.power - 1)) * self.tau * (x[:, 3] ** (self.power - 2)) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 3] ** (self.power / 2 - 2) * \
+                    x[:, 0] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 3] ** (self.power / 2 - 2) * \
+                    x[:, 1] ** (self.power / 2) - \
+                    (self.power / 2) * (self.power / 2 - 1) * self.tau * x[:, 3] ** (self.power / 2 - 2) * \
+                    x[:, 2] ** (self.power / 2)
+            term_2 = d2x_1 + d2x_2 + d2x_3 + d2x_4
+        else:
+            raise ValueError('Not valid d')
+        hscore_ = (0.5 * (term_1 ** 2).sum(-1) + term_2)
         return hscore_
 
     def fit(self, x):

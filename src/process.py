@@ -10,7 +10,7 @@ from collections import defaultdict
 from sklearn.metrics import roc_curve, auc
 
 result_path = os.path.join('output', 'result')
-save_format = 'png'
+save_format = 'pdf'
 vis_path = os.path.join('output', 'vis', save_format)
 num_experiments = 1
 exp = [str(x) for x in list(range(num_experiments))]
@@ -101,6 +101,7 @@ def make_control_list(mode, data):
             controls = controls_W
         elif data == 'EXP':
             test_mode = ['ksd-u', 'ksd-v', 'mmd', 'lrt-b-g', 'hst-b-g']
+            # test_mode = ['lrt-b-g', 'hst-b-g']
             ptb = []
             ptb_tau = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
                        2.0]
@@ -255,8 +256,7 @@ def main():
     # make_vis(df_history, 'ptb')
     # make_vis(df_history, 'ds')
     # make_vis_statistic(df_exp, 'ptb')
-    # make_vis_roc(df_history, 'ptb')
-    make_vis_roc(df_history, 'ds')
+    make_vis_roc(df_history, 'ptb')
     return
 
 
