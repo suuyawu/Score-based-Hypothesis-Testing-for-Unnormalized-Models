@@ -22,8 +22,8 @@ if __name__ == "__main__":
     num_samples = cfg['num_samples']
     torch.manual_seed(cfg['seed'])
     torch.cuda.manual_seed(cfg['seed'])
-    # data_names = ['MVN', 'GMM', 'RBM', 'EXP']
-    data_names = ['EXP']
+    data_names = ['MVN', 'GMM', 'RBM', 'EXP']
+    # data_names = ['EXP']
     for m in range(len(data_names)):
         data_name = data_names[m]
         if data_name == 'MVN':
