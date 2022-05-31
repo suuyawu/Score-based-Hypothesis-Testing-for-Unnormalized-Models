@@ -17,7 +17,7 @@ dpi = 300
 
 
 def run_exp_time():
-    num_trials = 1
+    num_trials = 4
     num_samples = 10000
     power = torch.tensor([4.])
     tau = torch.tensor([1.])
@@ -36,6 +36,9 @@ def run_exp_time():
         cfg['test_mode'] = 'lrt-b-g'
         time_lrt_i = []
         for j, input in enumerate(data_loader['test']):
+            nc_name = 'nc_{}_{}'.format(tau.item(), num_dims.item())
+            if nc_name in cfg:
+                del cfg[nc_name]
             s = time.time()
             gof = GoodnessOfFit(cfg['test_mode'], cfg['alter_num_samples'], cfg['alter_noise'])
             input = collate(input)
@@ -80,18 +83,18 @@ def plot(num_dims_list, time_lrt, time_hst):
     time_hst_std = time_hst.std(axis=-1)
     fig = plt.figure(figsize=figsize)
     ax_1 = fig.add_subplot(111)
-    # label = 'lrt-b-g'
-    # ax_1.errorbar(num_dims_list, time_lrt_mean, yerr=time_lrt_std / 2, color=color_dict[label],
-    #               linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
-    # label = 'hst-b-g'
-    # ax_1.errorbar(num_dims_list, time_hst_mean, yerr=time_hst_std / 2, color=color_dict[label],
-    #               linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
     label = 'lrt-b-g'
-    ax_1.plot(num_dims_list, time_lrt_mean, color=color_dict[label],
+    ax_1.errorbar(num_dims_list, time_lrt_mean, yerr=time_lrt_std / 2, color=color_dict[label],
                   linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
     label = 'hst-b-g'
-    ax_1.plot(num_dims_list, time_hst_mean, color=color_dict[label],
+    ax_1.errorbar(num_dims_list, time_hst_mean, yerr=time_hst_std / 2, color=color_dict[label],
                   linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
+    # label = 'lrt-b-g'
+    # ax_1.plot(num_dims_list, time_lrt_mean, color=color_dict[label],
+    #               linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
+    # label = 'hst-b-g'
+    # ax_1.plot(num_dims_list, time_hst_mean, color=color_dict[label],
+    #               linestyle=linestyle_dict[label], label=label_dict[label], marker=marker_dict[label])
     ax_1.set_xlabel('Dimension', fontsize=fontsize['label'])
     ax_1.set_ylabel('CPU Time (s)', fontsize=fontsize['label'])
     ax_1.set_xticks(num_dims_list)
@@ -115,7 +118,7 @@ if __name__ == "__main__":
     cfg['control']['model_name'] = 'exp'
     cfg['device'] = 'cpu'
     process_control()
-    run_exp_time()
+    # run_exp_time()
     result = load(os.path.join('output', 'result', 'exp_time.pt'))
     num_dims_list = result['num_dims_list']
     time_lrt = result['time_lrt']

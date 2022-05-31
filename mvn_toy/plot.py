@@ -11,7 +11,8 @@ height = 20
 size = 15
 fontsize = 16
 # figsize = (width*cm,height*cm)
-figsize = (10, 4)
+# figsize = (10, 4)
+figsize = (5, 4)
 
 
 # params = {'legend.fontsize': 'large',
@@ -54,7 +55,8 @@ for i in range(10):
     stds_hst.append(np.nanstd(np.array(base_result_hst[i])).item())
     stds_lrt.append(np.nanstd(np.array(base_result_lrt[i])).item())
 
-fig, (ax0, ax1) = plt.subplots(figsize=figsize, ncols=2, sharex=True)
+# fig, (ax0, ax1) = plt.subplots(figsize=figsize, ncols=2, sharex=True)
+fig, (ax0) = plt.subplots(figsize=figsize, ncols=1, sharex=True)
 ax0.errorbar(np.array([1., 2., 3., 5., 10., 15., 20., 25., 30., 50.]), means_hst, yerr=stds_hst, marker='o',
              label='HST(Simple)', color='red')
 ax0.errorbar(np.array([1., 2., 3., 5., 10., 15., 20., 25., 30., 50.]), means_lrt, yerr=stds_lrt, marker='D',
@@ -68,41 +70,41 @@ ax0.xaxis.set_tick_params(labelsize=fontsize)
 ax0.yaxis.set_tick_params(labelsize=fontsize)
 ax0.grid(linestyle='--', linewidth='0.5')
 
-base_result_hst = []
-base_result_lrt = []
-for i in range(10):
-    result_path_hst = './output/output{}'.format(i + 1) + '/result/0_MVN_hst-b-g_0.0-1.0_100_0.pt'
-    result_path_lrt = './output/output{}'.format(i + 1) + '/result/0_MVN_lrt-b-g_0.0-1.0_100_0.pt'
-    base_result_hst.append(load(result_path_hst)['logger'].history['test/Power-t2'])
-    base_result_lrt.append(load(result_path_lrt)['logger'].history['test/Power-t2'])
+# base_result_hst = []
+# base_result_lrt = []
+# for i in range(10):
+#     result_path_hst = './output/output{}'.format(i + 1) + '/result/0_MVN_hst-b-g_0.0-1.0_100_0.pt'
+#     result_path_lrt = './output/output{}'.format(i + 1) + '/result/0_MVN_lrt-b-g_0.0-1.0_100_0.pt'
+#     base_result_hst.append(load(result_path_hst)['logger'].history['test/Power-t2'])
+#     base_result_lrt.append(load(result_path_lrt)['logger'].history['test/Power-t2'])
 
-means_hst = []
-means_lrt = []
-stds_hst = []
-stds_lrt = []
+# means_hst = []
+# means_lrt = []
+# stds_hst = []
+# stds_lrt = []
 
-for i in range(10):
-    means_hst.append(sum(base_result_hst[i]) / len(base_result_hst[i]))
-    means_lrt.append(sum(base_result_lrt[i]) / len(base_result_hst[i]))
-    stds_hst.append(np.nanstd(np.array(base_result_hst[i])).item())
-    stds_lrt.append(np.nanstd(np.array(base_result_lrt[i])).item())
+# for i in range(10):
+#     means_hst.append(sum(base_result_hst[i]) / len(base_result_hst[i]))
+#     means_lrt.append(sum(base_result_lrt[i]) / len(base_result_hst[i]))
+#     stds_hst.append(np.nanstd(np.array(base_result_hst[i])).item())
+#     stds_lrt.append(np.nanstd(np.array(base_result_lrt[i])).item())
 
-print(len(means_hst))
-ax1.errorbar(np.array([1., 2., 3., 5., 10., 15., 20., 25., 30., 50.]), means_hst, yerr=stds_hst, marker='o',
-             label='HST (Simple)', color='red')
-ax1.errorbar(np.array([1., 2., 3., 5., 10., 15., 20., 25., 30., 50.]), means_lrt, yerr=stds_lrt, marker='D',
-             label='LRT (Simple)', color='black')
-# ax1.set_title('Perturbation on the log covariance')
-ax1.set_xlim(50., 0.)
-ax1.set_ylim(0.8, 1.)
-ax1.set_ylabel('Power on testing covariance', fontsize=fontsize)
-ax1.set_xlabel("The Maximum Eigen Value $\sigma_{\max}$", fontsize=fontsize)
-ax1.xaxis.set_tick_params(labelsize=fontsize)
-ax1.yaxis.set_tick_params(labelsize=fontsize)
-ax1.grid(linestyle='--', linewidth='0.5')
+# print(len(means_hst))
+# ax1.errorbar(np.array([1., 2., 3., 5., 10., 15., 20., 25., 30., 50.]), means_hst, yerr=stds_hst, marker='o',
+#              label='HST (Simple)', color='red')
+# ax1.errorbar(np.array([1., 2., 3., 5., 10., 15., 20., 25., 30., 50.]), means_lrt, yerr=stds_lrt, marker='D',
+#              label='LRT (Simple)', color='black')
+# # ax1.set_title('Perturbation on the log covariance')
+# ax1.set_xlim(50., 0.)
+# ax1.set_ylim(0.8, 1.)
+# ax1.set_ylabel('Power on testing covariance', fontsize=fontsize)
+# ax1.set_xlabel("The Maximum Eigen Value $\sigma_{\max}$", fontsize=fontsize)
+# ax1.xaxis.set_tick_params(labelsize=fontsize)
+# ax1.yaxis.set_tick_params(labelsize=fontsize)
+# ax1.grid(linestyle='--', linewidth='0.5')
 
 # plt.legend(prop={'size': 14}, loc='lower right')
-handles, labels = ax1.get_legend_handles_labels()
+handles, labels = ax0.get_legend_handles_labels()
 order = [1, 0]
 plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right', fontsize=14)
 

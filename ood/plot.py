@@ -48,6 +48,7 @@ def roc_plot(scores, labels):
     """
     from sklearn.metrics import roc_curve, auc
 
+    color_dict = {'$n=1$': 'blue', '$n=5$': 'orange', '$n=10$': 'green', '$n=15$': 'red', '$n=20$': 'purple'}
     figsize = (5, 4)
     fontsize = 16
     fig = plt.figure(figsize=figsize)
@@ -58,7 +59,7 @@ def roc_plot(scores, labels):
         score_arr = np.append(score_id, score_ood)
         fpr, tpr, _ = roc_curve(y_true, score_arr, pos_label=1)
         roc_auc = auc(fpr, tpr)
-        ax_1.plot(fpr, tpr, label=labels[i] + " , AUC=%0.2f" % roc_auc)
+        ax_1.plot(fpr, tpr, label=labels[i] + " , AUC=%0.2f" % roc_auc, color = color_dict[labels[i]])
     plt.plot([0, 1], [0, 1], linestyle="--", color='lightgray')
     # plt.xlim([0.0, 1.0])
     # plt.ylim([0.0, 1.05])
@@ -77,8 +78,8 @@ def roc_plot(scores, labels):
     return
 
 
-# sample_sizes = [1, 5, 10, 15, 20]
-sample_sizes = [1, 10, 15]
+sample_sizes = [1, 5, 10, 15, 20]
+# sample_sizes = [1, 10, 15]
 
 rocs = []
 labels = []
@@ -88,6 +89,9 @@ for n in sample_sizes:
 
     id_path = './' + 'cifar10_' + 'tiny-imagenet' + '_hscore_fd_{}.npy'.format(n)
     id_arr = np.load(id_path)
+    if n == 1:
+        ood_arr = ood_arr*32*32*np.log(2)
+        id_arr = id_arr*32*32*np.log(2)
     hist_plot([id_arr, ood_arr], ['cifar10', 'tiny-imagenet'], n)
     rocs.append([id_arr, ood_arr])
     labels.append('$n={}$'.format(n))
