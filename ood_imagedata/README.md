@@ -1,5 +1,6 @@
 # Hyvarinen Score Difference Test for CIFAR-10 versus Tiny-ImageNet
-This file contains a PyTorch implementation of the heuristic HST for Out-of-Distribution (OOD) detection
+This file contains a PyTorch implementation of the heuristic HST for Out-of-Distribution (OOD) detection.
+
 The code for implementation is heavily built on the official code for Score-Based Generative Modeling through Stochastic Differential Equations (https://github.com/yang-song/score_sde).
 
 ## How To Run
