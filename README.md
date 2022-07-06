@@ -54,11 +54,11 @@ See `hst/requirements.txt` and `ood/requirements.txt`
     ```
 
 ## Results
-- Multivariate Normal Distribution, power comparison by changing the perturbation level of <img src="https://latex.codecogs.com/gif.latex?\log(\Sigma) (n=100)"/>
+- Multivariate Normal Distribution, power comparison by changing the perturbation level of $\log(\Sigma)$ $(n=100)$
 
 ![MVN_0.0-x_100_0](/asset/MVN_0.0-x_100_0.png)
 
-- Gauss-Bernoulli RBM, Power comparison of various tests varying sample size and the perturbation level  <img src="https://latex.codecogs.com/gif.latex?\sigma_{ptb} = 0.03"/>
+- Gauss-Bernoulli RBM, Power comparison of various tests varying sample size and the perturbation level $\sigma_{ptb} = 0.03$
 
 ![RBM_0.03_x_0](/asset/RBM_0.03_x_0.png)
 
