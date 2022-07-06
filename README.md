@@ -56,15 +56,15 @@ See `hst/requirements.txt` and `ood/requirements.txt`
 ## Results
 - Multivariate Normal Distribution, power comparison by changing the perturbation level of <img src="https://latex.codecogs.com/gif.latex?\log(\Sigma) (n=100)"/>
 
-![MVN_0.0-x_100_0](/asset/MVN_0.0-x_100_0.pdf)
+![MVN_0.0-x_100_0](/asset/MVN_0.0-x_100_0.png)
 
 - Gauss-Bernoulli RBM, Power comparison of various tests varying sample size and the perturbation level  <img src="https://latex.codecogs.com/gif.latex?\sigma_{ptb} = 0.03"/>
 
-![RBM_0.03_x_0](/asset/RBM_0.03_x_0.pdf)
+![RBM_0.03_x_0](/asset/RBM_0.03_x_0.png)
 
 - (a) ROC curves and (b, c) histograms of test statistics of HST for OOD Detection on CIFAR10 (in-distribution) and Tiny ImageNet datasets (out-distribution)
 
-![ood](/asset/ood.pdf)
+![ood](/asset/ood.png)
 
 ## Acknowledgement
 *Suya Wu  
