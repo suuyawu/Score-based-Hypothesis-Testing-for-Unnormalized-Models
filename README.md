@@ -1,5 +1,5 @@
 # Score-based Hypothesis Testing for Unnormalized Models
-This is an implementation of Score-based Hypothesis Testing for Unnormalized Models
+This is an implementation of [Score-based Hypothesis Testing for Unnormalized Models](https://ieeexplore.ieee.org/document/9813688)
  
 ## Requirements
 See `hst/requirements.txt` and `ood/requirements.txt`
@@ -54,7 +54,7 @@ See `hst/requirements.txt` and `ood/requirements.txt`
     ```
 
 ## Results
-- Multivariate Normal Distribution, power comparison by changing the perturbation level of <img src="https://latex.codecogs.com/gif.latex?\log(\Sigma)"/> (<img src="https://latex.codecogs.com/gif.latex?n=100)"/>)
+- Multivariate Normal Distribution, power comparison by changing the perturbation level of <img src="https://latex.codecogs.com/gif.latex?\log(\Sigma) (n=100)"/>
 
 ![MVN_0.0-x_100_0](/asset/MVN_0.0-x_100_0.pdf)
 
