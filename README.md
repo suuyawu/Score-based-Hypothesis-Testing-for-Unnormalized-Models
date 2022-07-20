@@ -69,5 +69,6 @@ See `hst/requirements.txt` and `ood/requirements.txt`
 ## Acknowledgement
 *Suya Wu  
 Enmao Diao  
+Khalil Elkhalil  
 Jie Ding  
 Vahid Tarokh*
