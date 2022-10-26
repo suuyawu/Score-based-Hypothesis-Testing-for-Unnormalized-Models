@@ -50,7 +50,7 @@ See `hst/requirements.txt` and `ood/requirements.txt`
     ```
  - Perform OOD Detection on CIFAR-10(in-distribution) versus Tiny-ImageNet (out-of-distribution)
     ```ruby
-    python ood/hst.py
+    python ood/test_ood.py
     ```
 
 ## Results
